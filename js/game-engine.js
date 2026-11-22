@@ -242,30 +242,31 @@ function createCyberRoadTexture() {
   return tex;
 }
 
-function createServerRackTexture(accentHex = '#06b6d4') {
+function createServerRackTexture(accentHex = '#e0f2fe') {
   const canvas = document.createElement('canvas');
   canvas.width = 128;
   canvas.height = 256;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#070b14';
+  // Sky-blue server rack background
+  ctx.fillStyle = '#0ea5e9';
   ctx.fillRect(0, 0, 128, 256);
-  ctx.strokeStyle = '#1e293b';
+  ctx.strokeStyle = '#bae6fd';
   ctx.lineWidth = 4;
   ctx.strokeRect(2, 2, 124, 252);
 
   for (let i = 0; i < 10; i++) {
     const y = 8 + i * 24;
-    ctx.fillStyle = i % 2 === 0 ? '#111827' : '#172033';
+    ctx.fillStyle = i % 2 === 0 ? '#0284c7' : '#38bdf8';
     ctx.fillRect(8, y, 112, 20);
 
-    ctx.fillStyle = '#10b981';
+    ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(92, y + 10, 2.5, 0, Math.PI * 2);
+    ctx.arc(92, y + 10, 2.6, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = i % 3 === 0 ? '#f59e0b' : accentHex;
+    ctx.fillStyle = i % 3 === 0 ? '#fde047' : accentHex;
     ctx.beginPath();
-    ctx.arc(106, y + 10, 2.5, 0, Math.PI * 2);
+    ctx.arc(106, y + 10, 2.6, 0, Math.PI * 2);
     ctx.fill();
   }
   return new THREE.CanvasTexture(canvas);
@@ -440,12 +441,12 @@ function buildThreeLayerWorld() {
   roadSamplePoints = roadCurve.getSpacedPoints(450);
   buildSmoothCyberRoad(roadCurve, 7.6, 280);
 
-  // 15 Fog VM Edge Server Racks with Proper Plinth, Brushed Steel Body, Front Rack Glass & Rooftop HVAC Cooling Fan
-  const fogRackTex = createServerRackTexture('#22d3ee');
-  const cabinetMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.42, metalness: 0.55 });
-  const plinthMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.6, metalness: 0.35 });
-  const shroudMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.65 });
-  const bladeMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.45 });
+  // 15 Fog VM Edge Server Racks with Sky-Blue Body, Front Rack Glass & Rooftop HVAC Cooling Fan
+  const fogRackTex = createServerRackTexture('#e0f2fe');
+  const cabinetMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.25, roughness: 0.35, metalness: 0.35 });
+  const plinthMat = new THREE.MeshStandardMaterial({ color: 0x7dd3fc, roughness: 0.5, metalness: 0.25 });
+  const shroudMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.4, metalness: 0.45 });
+  const bladeMat = new THREE.MeshStandardMaterial({ color: 0xe0f2fe, emissive: 0xbae6fd, emissiveIntensity: 0.6 });
   const frontGlassMat = new THREE.MeshBasicMaterial({ map: fogRackTex });
 
   let placedFogVMs = 0;
@@ -571,22 +572,29 @@ function buildThreeLayerWorld() {
   cloudEdges.position.copy(cloudPlatform.position);
   scene.add(cloudEdges);
 
-  const cloudRackTex = createServerRackTexture('#60a5fa');
+  const cloudRackTex = createServerRackTexture('#ffffff');
   [-10, 24].forEach((dcX) => {
     const dcGroup = new THREE.Group();
     dcGroup.position.set(dcX, 6.48, -72);
 
     const shell = new THREE.Mesh(
       new THREE.BoxGeometry(5.2, 8.8, 5.2),
-      new THREE.MeshStandardMaterial({ map: cloudRackTex, metalness: 0.6, roughness: 0.3 })
+      new THREE.MeshStandardMaterial({
+        map: cloudRackTex,
+        color: 0x7dd3fc,
+        emissive: 0x0284c7,
+        emissiveIntensity: 0.3,
+        metalness: 0.35,
+        roughness: 0.28
+      })
     );
     shell.position.y = 4.4;
     shell.castShadow = true;
     dcGroup.add(shell);
 
     const roofRing = new THREE.Mesh(
-      new THREE.TorusGeometry(2.4, 0.14, 8, 24),
-      new THREE.MeshBasicMaterial({ color: 0x60a5fa })
+      new THREE.TorusGeometry(2.4, 0.16, 8, 24),
+      new THREE.MeshBasicMaterial({ color: 0xe0f2fe })
     );
     roofRing.rotation.x = Math.PI / 2;
     roofRing.position.y = 9.2;

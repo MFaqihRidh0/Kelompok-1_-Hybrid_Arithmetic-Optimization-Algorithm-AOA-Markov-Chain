@@ -138,9 +138,9 @@ window.HMCDSStage3D = (function () {
     canvas.height = 256;
     const ctx = canvas.getContext('2d');
 
-    ctx.fillStyle = '#070b12';
+    ctx.fillStyle = '#0ea5e9';
     ctx.fillRect(0, 0, 128, 256);
-    ctx.strokeStyle = '#1e293b';
+    ctx.strokeStyle = '#bae6fd';
     ctx.lineWidth = 4;
     ctx.strokeRect(2, 2, 124, 252);
 
@@ -150,20 +150,20 @@ window.HMCDSStage3D = (function () {
 
     for (let i = 0; i < slotCount; i++) {
       const y = 8 + i * slotH;
-      ctx.fillStyle = i % 2 === 0 ? '#111827' : '#162032';
+      ctx.fillStyle = i % 2 === 0 ? '#0284c7' : '#38bdf8';
       ctx.fillRect(6, y + 1, 116, slotH - 3);
 
-      ctx.fillStyle = '#05080f';
+      ctx.fillStyle = '#0369a1';
       ctx.fillRect(10, y + 4, 60, slotH - 8);
 
-      ctx.fillStyle = '#10b981';
+      ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(92, y + slotH / 2, 2.2, 0, Math.PI * 2);
+      ctx.arc(92, y + slotH / 2, 2.4, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.fillStyle = accent;
       ctx.beginPath();
-      ctx.arc(112, y + slotH / 2, 2.2, 0, Math.PI * 2);
+      ctx.arc(112, y + slotH / 2, 2.4, 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -256,7 +256,7 @@ window.HMCDSStage3D = (function () {
 
     const plinth = new THREE.Mesh(
       new THREE.BoxGeometry(plinthW, plinthH, plinthD),
-      new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.85, metalness: 0.25 })
+      new THREE.MeshStandardMaterial({ color: 0x7dd3fc, roughness: 0.65, metalness: 0.2 })
     );
     plinth.position.set(pos[0], plinthH / 2, pos[2]);
     plinth.receiveShadow = true;
@@ -276,7 +276,7 @@ window.HMCDSStage3D = (function () {
 
     const bldgShell = new THREE.Mesh(
       new THREE.BoxGeometry(bldgW, bldgH, bldgD),
-      new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.72, roughness: 0.32 })
+      new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.2, metalness: 0.35, roughness: 0.3 })
     );
     bldgShell.position.set(pos[0], bldgY, pos[2]);
     bldgShell.castShadow = true;
@@ -307,7 +307,7 @@ window.HMCDSStage3D = (function () {
 
       const chBody = new THREE.Mesh(
         new THREE.BoxGeometry(1.1, 0.5, 1.1),
-        new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.75, roughness: 0.35 })
+        new THREE.MeshStandardMaterial({ color: 0x0ea5e9, metalness: 0.45, roughness: 0.35 })
       );
       chBody.position.y = 0.25;
       chillerGroup.add(chBody);
@@ -317,7 +317,7 @@ window.HMCDSStage3D = (function () {
       for (let b = 0; b < 4; b++) {
         const blade = new THREE.Mesh(
           new THREE.BoxGeometry(0.12, 0.03, 0.75),
-          new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.9, roughness: 0.2 })
+          new THREE.MeshStandardMaterial({ color: 0xe0f2fe, metalness: 0.7, roughness: 0.2 })
         );
         blade.rotation.y = (b * Math.PI) / 2;
         fanProp.add(blade);
@@ -340,7 +340,7 @@ window.HMCDSStage3D = (function () {
 
       const rackFrame = new THREE.Mesh(
         new THREE.BoxGeometry(1.35, satH, 1.35),
-        new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.75, roughness: 0.35 })
+        new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.35, roughness: 0.32 })
       );
       rackFrame.castShadow = true;
       podGroup.add(rackFrame);
@@ -756,8 +756,8 @@ window.HMCDSStage3D = (function () {
     const height = containerEl.clientHeight || 340;
 
     dcScene = new THREE.Scene();
-    dcScene.background = new THREE.Color(0xfbf8f2);
-    dcScene.fog = new THREE.FogExp2(0xfbf8f2, 0.008);
+    dcScene.background = new THREE.Color(0xe0f2fe);
+    dcScene.fog = new THREE.FogExp2(0xe0f2fe, 0.008);
 
     dcCamera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
     dcCamera.position.set(0, 24, 34);
@@ -785,19 +785,19 @@ window.HMCDSStage3D = (function () {
     sunLight.castShadow = true;
     dcScene.add(sunLight);
 
-    const rimLight = new THREE.DirectionalLight(0xe0f2fe, 0.65);
+    const rimLight = new THREE.DirectionalLight(0xbae6fd, 0.75);
     rimLight.position.set(-25, 20, -25);
     dcScene.add(rimLight);
 
     const floor = new THREE.Mesh(
       new THREE.PlaneGeometry(100, 100),
-      new THREE.MeshStandardMaterial({ color: 0xf5ede2, roughness: 0.88, metalness: 0.1 })
+      new THREE.MeshStandardMaterial({ color: 0xbae6fd, roughness: 0.85, metalness: 0.1 })
     );
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     dcScene.add(floor);
 
-    const gridHelper = new THREE.GridHelper(90, 45, 0x0284c7, 0xded2c0);
+    const gridHelper = new THREE.GridHelper(90, 45, 0x0284c7, 0x7dd3fc);
     gridHelper.position.y = 0.02;
     dcScene.add(gridHelper);
 
