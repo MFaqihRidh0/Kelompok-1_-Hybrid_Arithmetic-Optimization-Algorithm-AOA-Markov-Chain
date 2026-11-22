@@ -129,203 +129,124 @@
 
         <!-- SLIDE 1: Identitas Jurnal & Latar Belakang -->
         <div class="game-slide-pane" id="gameSlide_0">
-          <span class="slide-tag">POS 01 &bull; LAPISAN 1: IOT SENSOR VALLEY &bull; LATAR BELAKANG</span>
+          <span class="slide-tag">POS 01 &bull; LATAR BELAKANG</span>
           <h2 style="font-size:21px; font-weight:800; margin-bottom:6px;">Hybrid Markov Chain-Based Dynamic Scheduling (HMCDS)</h2>
-          <div class="card" style="border-left:4px solid #0284c7; margin-bottom:12px;">
-            <p style="font-size:12.5px; line-height:1.55; margin:0;">
-              <strong>Jurnal Referensi:</strong> <em>"Hybrid Markov chain-based dynamic scheduling to improve load balancing performance in fog-cloud environment"</em><br>
-              <strong>Penulis:</strong> Navid Khaledian, Shiva Razzaghzadeh, Zeynab Haghbayan, &amp; Marcus Völp (University of Luxembourg &amp; Islamic Azad University)<br>
-              <strong>Publikasi:</strong> <em>Sustainable Computing: Informatics and Systems</em> (Elsevier), Vol. 45, Article 101077, 2025 &bull; <code>doi:10.1016/j.suscom.2024.101077</code>
+          <div class="card" style="border-left:4px solid #0284c7; margin-bottom:10px;">
+            <p style="font-size:12.5px; line-height:1.5; margin:0;">
+              <strong>Jurnal:</strong> Khaledian et al. (2025), <em>Sustainable Computing: Informatics and Systems</em> Vol. 45, Article 101077.<br>
+              <strong>Tujuan:</strong> Mengatasi masalah penjadwalan tugas IoT di lingkungan <strong>Fog–Cloud</strong> tanpa membuat server <em>overload</em>.
             </p>
           </div>
-
-          <p style="font-size:13px; margin-bottom:10px; line-height:1.5;">
-            Dalam ekosistem <strong>Internet of Things (IoT)</strong>, penggunaan <em>Cloud Computing</em> murni memicu latensi tinggi karena jarak fisik ke pusat data. <em>Fog Computing</em> mendekatkan pemrosesan ke tepi jaringan (<em>network edge</em>), namun kapasitas CPU &amp; memorinya terbatas. Tanpa penjadwalan adaptif, sistem mengalami <strong>3 masalah utama</strong>:
-          </p>
 
           <div class="grid-3">
             <div class="card" style="border-left:4px solid #ef4444;">
               <h4 style="color:#b91c1c; font-size:13px; margin-bottom:4px;">1. Load Instability</h4>
-              <p style="font-size:12px; margin:0; line-height:1.45;">Ketidakstabilan beban kerja yang memicu <em>bottleneck</em> (kemacetan komputasi) pada node tertentu.</p>
+              <p style="font-size:12px; margin:0;">Beban tidak merata memicu kemacetan (<em>bottleneck</em>) di node Fog.</p>
             </div>
             <div class="card" style="border-left:4px solid #f59e0b;">
               <h4 style="color:#b45309; font-size:13px; margin-bottom:4px;">2. Makespan &amp; Delay Tinggi</h4>
-              <p style="font-size:12px; margin:0; line-height:1.45;">Membengkaknya waktu selesai total dan tunda antrean; fatal bagi aplikasi <em>real-time</em> (kendaraan otonom, medis, otomasi industri).</p>
+              <p style="font-size:12px; margin:0;">Antrean panjang berbahaya untuk aplikasi <em>real-time</em> (medis, otonom).</p>
             </div>
             <div class="card" style="border-left:4px solid #8b5cf6;">
-              <h4 style="color:#6d28d9; font-size:13px; margin-bottom:4px;">3. Underutilization of VM</h4>
-              <p style="font-size:12px; margin:0; line-height:1.45;">Sebagian VM mengalami <em>overload</em> sementara VM lain menganggur (<em>idle</em>), sehingga memboroskan energi.</p>
+              <h4 style="color:#6d28d9; font-size:13px; margin-bottom:4px;">3. Underutilization VM</h4>
+              <p style="font-size:12px; margin:0;">Sebagian VM penuh, sebagian lain menganggur sehingga boros energi.</p>
             </div>
           </div>
 
           <div class="takeaway-box">
-            <div class="takeaway-tag">INTI POS 1</div>
-            <div class="takeaway-text">HMCDS hadir memadukan prediksi beban proaktif (Markov Chain) dan optimasi pemetaan global (AOA) untuk menstabilkan lingkungan Fog–Cloud.</div>
+            <div class="takeaway-tag">SOLUSI HMCDS</div>
+            <div class="takeaway-text">Gabungkan <strong>Markov Chain</strong> (prediksi beban sebelum penuh) + <strong>AOA</strong> (optimasi penjadwalan global).</div>
           </div>
         </div>
 
         <!-- SLIDE 2: Arsitektur 3 Lapis & Klasifikasi Tugas -->
         <div class="game-slide-pane" id="gameSlide_1" style="display:none;">
-          <span class="slide-tag">POS 02 &bull; GERBANG CF_MANAGER &bull; ARSITEKTUR 3 LAPIS</span>
-          <h2 style="font-size:21px; font-weight:800; margin-bottom:8px;">Three-Layer Architecture &amp; Klasifikasi Tugas</h2>
+          <span class="slide-tag">POS 02 &bull; ARSITEKTUR 3 LAPIS</span>
+          <h2 style="font-size:21px; font-weight:800; margin-bottom:8px;">Arsitektur Fog–Cloud &amp; Peran <code>CF_Manager</code></h2>
 
-          <div class="grid-3" style="margin-bottom:12px;">
+          <div class="grid-3" style="margin-bottom:10px;">
             <div class="card" style="border-top:4px solid #06b6d4;">
               <h4 style="font-size:13px; color:#0e7490; margin-bottom:4px;">1. IoT / Sensor Layer</h4>
-              <p style="font-size:12px; margin:0; line-height:1.45;">Perangkat pintar &amp; sensor menghasilkan permintaan tugas (<em>tasks</em>) dengan karakteristik heterogen.</p>
+              <p style="font-size:12px; margin:0;">Mengirim permintaan tugas dari sensor &amp; perangkat pintar.</p>
             </div>
             <div class="card" style="border-top:4px solid #0284c7;">
               <h4 style="font-size:13px; color:#0369a1; margin-bottom:4px;">2. Fog Layer (<code>CF_Manager</code>)</h4>
-              <p style="font-size:12px; margin:0; line-height:1.45;"><strong>15 VM</strong> (100–2.800 MIPS, RAM 0,5 GB, Storage 10 GB, BW 1 GB/s). Bertugas memantau sumber daya &amp; mengklasifikasikan tugas.</p>
+              <p style="font-size:12px; margin:0;"><strong>15 VM</strong> (100–2.800 MIPS, BW 1 GB/s). Dekat user, latensi rendah.</p>
             </div>
             <div class="card" style="border-top:4px solid #2563eb;">
               <h4 style="font-size:13px; color:#1d4ed8; margin-bottom:4px;">3. Cloud Layer</h4>
-              <p style="font-size:12px; margin:0; line-height:1.45;"><strong>2 Data Center, 4 Host, 40 VM</strong> (3.000–5.000 MIPS, RAM 1 GB, Storage 20 GB, BW 0,5 GB/s) untuk tugas <em>non-real-time</em> &amp; <em>backup</em>.</p>
+              <p style="font-size:12px; margin:0;"><strong>2 Data Center, 40 VM</strong> (3.000–5.000 MIPS). Kapasitas komputasi besar.</p>
             </div>
           </div>
 
-          <div class="card" style="margin-bottom:10px;">
-            <h4 style="font-size:13px; margin-bottom:6px;">Kriteria Klasifikasi Tugas oleh <code>CF_Manager</code></h4>
-            <div class="grid-3">
-              <div>
-                <strong style="font-size:12px; color:#059669;">Urgensi (Deadline):</strong>
-                <ul style="font-size:11.5px; margin-left:16px; margin-top:4px; line-height:1.45;">
-                  <li><strong>Real-Time:</strong> Wajib diproses langsung di <em>Fog Layer</em> terdekat (latensi minimal).</li>
-                  <li><strong>Non-Real-Time:</strong> Toleran jeda, didistribusikan ke <em>Fog &amp; Cloud Layer</em>.</li>
-                </ul>
-              </div>
-              <div>
-                <strong style="font-size:12px; color:#0284c7;">Kebutuhan Sumber Daya:</strong>
-                <ul style="font-size:11.5px; margin-left:16px; margin-top:4px; line-height:1.45;">
-                  <li><strong>Lightweight:</strong> Dieksekusi di <em>edge / fog</em>.</li>
-                  <li><strong>Heavyweight:</strong> Dialokasikan ke <em>fog node</em> besar atau <em>cloud</em>.</li>
-                </ul>
-              </div>
-              <div>
-                <strong style="font-size:12px; color:#7c3aed;">Ketergantungan (Dependency):</strong>
-                <ul style="font-size:11.5px; margin-left:16px; margin-top:4px; line-height:1.45;">
-                  <li><strong>Independent tasks:</strong> Dapat dijadwalkan paralel.</li>
-                  <li><strong>Dependent tasks:</strong> Dimodelkan dengan <em>Directed Acyclic Graph</em> (DAG).</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <div class="takeaway-box">
-            <div class="takeaway-tag">INTI POS 2</div>
-            <div class="takeaway-text">Pemisahan tugas Real-Time (khusus Fog) vs Non-Real-Time (Fog + Cloud) memastikan batas tenggat waktu terjaga sebelum optimasi dimulai.</div>
+          <div class="card">
+            <h4 style="font-size:13px; margin-bottom:6px;">Cara <code>CF_Manager</code> Memilah Tugas:</h4>
+            <ul style="font-size:12px; margin-left:18px; line-height:1.55;">
+              <li><strong>Real-Time:</strong> Wajib diproses di <strong>Fog Layer</strong> terdekat agar latensi minimal.</li>
+              <li><strong>Non-Real-Time:</strong> Boleh diproses di <strong>Fog maupun Cloud</strong>.</li>
+              <li><strong>Ketergantungan:</strong> Tugas <em>independent</em> jalan paralel; <em>dependent</em> pakai DAG.</li>
+            </ul>
           </div>
         </div>
 
         <!-- SLIDE 3: Tahap 1 — Markov Chain -->
         <div class="game-slide-pane" id="gameSlide_2" style="display:none;">
-          <span class="slide-tag">POS 03 &bull; FOG PLATEAU &bull; TAHAP 1: MARKOV CHAIN</span>
-          <h2 style="font-size:21px; font-weight:800; margin-bottom:6px;">Prediksi Beban VM dengan Markov Chain (<em>VM Load Forecasting</em>)</h2>
-          <p style="font-size:12.5px; margin-bottom:8px; line-height:1.5;">
-            Markov Chain bersifat <strong><em>memoryless</em></strong> (status masa depan $t+1$ hanya bergantung pada status saat ini $t$), sehingga komputasi prediksinya sangat ringan tanpa perlu melatih model <em>Machine Learning</em> yang berat.
+          <span class="slide-tag">POS 03 &bull; TAHAP 1: MARKOV CHAIN</span>
+          <h2 style="font-size:21px; font-weight:800; margin-bottom:6px;">Prediksi Beban VM dengan Markov Chain</h2>
+          <p style="font-size:12.5px; margin-bottom:8px;">
+            Markov Chain bersifat <strong><em>memoryless</em></strong> (status $t+1$ hanya melihat status saat ini $t$), sehingga sangat ringan tanpa perlu training ML berat.
           </p>
 
           <div class="grid-2">
             <div class="math-box">
-              <strong>1. Beban Tugas &amp; Total Beban VM:</strong>
-              $$L_i(t) = \lambda_1 E_i(t) + \lambda_2 W_i(t), \quad \sum \lambda_k = 1$$
-              $$\text{LOAD}(i) = \sum_{k=1}^{n} L_k(t)$$
+              <strong>1. Beban VM &amp; Matriks Transisi:</strong>
+              $$L_i(t) = \lambda_1 E_i(t) + \lambda_2 W_i(t), \quad \text{LOAD}(i) = \sum L_k(t)$$
+              $$P_{ij}(t) = P\{X_{n+1} = j \mid x_n = i\}$$
             </div>
             <div class="math-box">
-              <strong>2. Klasifikasi 3 Status VM:</strong>
-              <ul style="font-size:12px; margin-left:18px; margin-top:4px; line-height:1.55;">
-                <li><code>V1 = N</code> : <strong>Normal Load</strong></li>
-                <li><code>V2 = U</code> : <strong>Underloaded / Low Load (<code>L</code>)</strong></li>
-                <li><code>V3 = O</code> : <strong>Overloaded / High Load (<code>H</code>)</strong></li>
+              <strong>2. Tiga Status Prediksi VM:</strong>
+              <ul style="font-size:12px; margin-left:18px; margin-top:4px; line-height:1.6;">
+                <li><code>V2 = U</code> (<strong>Low Load</strong>): $P_{ij} \le \text{MIN}$ &rarr; Prioritas penerima tugas.</li>
+                <li><code>V1 = N</code> (<strong>Normal</strong>): Kondisi aman &amp; stabil.</li>
+                <li><code>V3 = O</code> (<strong>Overloaded</strong>): $P_{ij} \ge \text{MAX}$ &rarr; Diblokir &amp; migrasi tugas!</li>
               </ul>
-            </div>
-          </div>
-
-          <div class="math-box">
-            <strong>3. Matriks Probabilitas Transisi (<em>Transition Probability Matrix</em>):</strong>
-            $$P_{ij}(t) = P\{X_{n+1} = j \mid x_n = i\}, \quad \sum_{j=1}^{N} a_{ij} = 1 \qquad\text{dan jalur multi-langkah:}\qquad P_{ij} = \sum_{t=2}^{n} \frac{P_{ij}^{(t)} + P_{ji}^{(t)}}{2}$$
-          </div>
-
-          <div class="grid-2" style="margin-top:8px;">
-            <div class="card" style="border-left:4px solid #10b981;">
-              <strong style="font-size:12.5px; color:#047857;">Aturan Low-Load ($P_{ij} \le \text{MIN}(d_i)$)</strong>
-              <p style="font-size:12px; margin:4px 0 0;">VM diprediksi berstatus <strong>Low-Load</strong> $\rightarrow$ aman menerima tugas baru atau tugas limpahan migrasi.</p>
-            </div>
-            <div class="card" style="border-left:4px solid #ef4444;">
-              <strong style="font-size:12.5px; color:#b91c1c;">Aturan Overloaded ($P_{ij} \ge \text{MAX}(d_i)$)</strong>
-              <p style="font-size:12px; margin:4px 0 0;">VM diprediksi akan <strong>Overloaded</strong> $\rightarrow$ sistem segera memigrasikan tugas ke VM <em>Low-Load</em> hingga kembali ke rentang $\text{NORMAL}(i)$.</p>
             </div>
           </div>
         </div>
 
         <!-- SLIDE 4: Tahap 2 — AOA -->
         <div class="game-slide-pane" id="gameSlide_3" style="display:none;">
-          <span class="slide-tag">POS 04 &bull; FOG PLATEAU &bull; TAHAP 2: ARITHMETIC OPTIMIZATION ALGORITHM</span>
+          <span class="slide-tag">POS 04 &bull; TAHAP 2: AOA</span>
           <h2 style="font-size:21px; font-weight:800; margin-bottom:6px;">Optimasi Penjadwalan Menggunakan AOA</h2>
+          <p style="font-size:12.5px; margin-bottom:8px;">
+            <strong>Arithmetic Optimization Algorithm (AOA)</strong> mencari pemetaan Task &rarr; VM terbaik menggunakan 4 operator aritmatika ($\div, \times, -, +$) yang dikendalikan oleh $\text{MOA}$ dan $\text{MOP}$.
+          </p>
 
           <div class="math-box">
-            <strong>1. Fungsi Objektif (<em>Fitness Function</em>):</strong>
-            $$\text{ETC}_{ij} = \frac{T_{len}^i}{VM_{pow}^j} \qquad | \qquad \text{Cost}_{\text{fog}} = \min \left( \max_{j \in \{1..m\}} \sum_{i=1}^{n} \text{ETC}_{ij} \right) \qquad | \qquad F = \alpha \times D + (1 - \alpha) \times E$$
-          </div>
-
-          <div class="math-box">
-            <strong>2. Parameter Pengendali Pencarian ($\text{MOA}$ dan $\text{MOP}$, dengan $\alpha = 5$):</strong>
-            $$\text{MOA}(C\_Iter) = \text{Min} + C\_Iter \times \left( \frac{\text{Max} - \text{Min}}{M\_Iter} \right) \qquad\text{dan}\qquad \text{MOP}(C\_Iter) = 1 - \frac{C\_Iter^{1/\alpha}}{M\_Iter^{1/\alpha}}$$
+            <strong>Fungsi Tujuan (Minimalkan Makespan, Delay, &amp; Energi):</strong>
+            $$\text{ETC}_{ij} = \frac{T_{len}^i}{VM_{pow}^j}, \qquad \text{Cost}_{\text{fog}} = \min\left(\max_j \sum_i \text{ETC}_{ij}\right), \qquad F = \alpha D + (1-\alpha)E$$
           </div>
 
           <div class="grid-2" style="margin-top:8px;">
-            <div class="math-box" style="border-left-color:#f59e0b;">
-              <strong>3a. Fase Eksplorasi ($r_1 &gt; \text{MOA}$) — Global ($\div, \times$):</strong>
-              $$X_{i,j}(C\_Iter+1) = \begin{cases} best(x_j) \div (\text{MOP} + \epsilon) \times ((UB_j - LB_j)\mu + LB_j), & r_2 &lt; 0.5 \\ best(x_j) \times \text{MOP} \times ((UB_j - LB_j)\mu + LB_j), & r_2 \ge 0.5 \end{cases}$$
+            <div class="card" style="border-left:4px solid #f59e0b;">
+              <h4 style="color:#b45309; font-size:13px;">Eksplorasi ($r_1 &gt; \text{MOA}$)</h4>
+              <p style="font-size:12px; margin:4px 0 0;">Memakai <strong>Pembagian ($\div$) &amp; Perkalian ($\times$)</strong> untuk melompat jauh mencari kandidat VM baru secara global.</p>
             </div>
-            <div class="math-box" style="border-left-color:#10b981;">
-              <strong>3b. Fase Eksploitasi ($r_1 \le \text{MOA}$) — Lokal ($-, +$):</strong>
-              $$X_{i,j}(C\_Iter+1) = \begin{cases} best(x_j) - \text{MOP} \times ((UB_j - LB_j)\mu + LB_j), & r_3 &lt; 0.5 \\ best(x_j) + \text{MOP} \times ((UB_j - LB_j)\mu + LB_j), & r_3 \ge 0.5 \end{cases}$$
+            <div class="card" style="border-left:4px solid #10b981;">
+              <h4 style="color:#047857; font-size:13px;">Eksploitasi ($r_1 \le \text{MOA}$)</h4>
+              <p style="font-size:12px; margin:4px 0 0;">Memakai <strong>Pengurangan ($-$) &amp; Penjumlahan ($+$)</strong> untuk menyempurnakan solusi terbaik <code>best(x)</code>.</p>
             </div>
           </div>
-          <p style="font-size:11.5px; color:#475569; margin-top:4px;">
-            Keterangan: $UB_j, LB_j$ adalah batas atas &amp; bawah indeks VM, $\mu$ parameter kontrol, dan $\epsilon \approx 0.001$ pencegah pembagian dengan nol.
-          </p>
         </div>
 
-        <!-- SLIDE 5: Pseudocode Hybrid HMCDS -->
+        <!-- SLIDE 5: Simulasi Animasi Bertahap Cara Kerja Markov + AOA -->
         <div class="game-slide-pane" id="gameSlide_4" style="display:none;">
-          <span class="slide-tag">POS 05 &bull; JEMBATAN FOG–CLOUD &bull; ALUR EKSEKUSI HYBRID</span>
-          <h2 style="font-size:21px; font-weight:800; margin-bottom:6px;">Pseudocode Terintegrasi HMCDS (5 Langkah)</h2>
-          <div class="code-viewer-container">
-            <div class="code-header-bar">
-              <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#38bdf8; font-weight:700;">
-                ALGORITHM: HMCDS (Hybrid Markov Chain + AOA) &bull; N_pop = 10, M_Iter = 30, alpha = 5, eps = 0.001
-              </span>
-            </div>
-            <div class="code-scroll-area" style="max-height: 360px;">
-<pre><code><span class="syn-kw">STEP 1:</span> <span class="syn-fn">Klasifikasi Tugas &amp; Pemantauan Beban (Fog Broker)</span>
-  1. Pisahkan Real-Time (kandidat = Fog Layer) &amp; Non-Real-Time (kandidat = Fog + Cloud).
-  2. Hitung beban terkini tiap VM: LOAD(i) = sum(lambda_1 * E_i(t) + lambda_2 * W_i(t)).
-
-<span class="syn-kw">STEP 2:</span> <span class="syn-fn">Prediksi Status VM dengan Markov Chain</span>
-  1. Bentuk Matriks Probabilitas Transisi P_ij dari riwayat transisi beban VM.
-  2. Klasifikasikan prediksi:
-     - P_ij &lt;= MIN_threshold -&gt; <span class="syn-str">LOW_LOAD</span> (Prioritas penerima tugas)
-     - MIN &lt; P_ij &lt; MAX      -&gt; NORMAL
-     - P_ij &gt;= MAX_threshold -&gt; <span class="syn-com">OVERLOADED (Keluarkan dari kandidat / migrasikan tugas)</span>
-
-<span class="syn-kw">STEP 3:</span> <span class="syn-fn">Inisialisasi Populasi AOA</span>
-  1. Bangkitkan N_pop (<span class="syn-num">10</span>) vektor solusi X_i (memetakan Task_k ke VM valid non-Overloaded).
-  2. Evaluasi Fitness (Makespan untuk Fog; kombinasi Delay &amp; Energy untuk Fog-Cloud) -&gt; simpan best(x).
-
-<span class="syn-kw">STEP 4:</span> <span class="syn-fn">Loop Optimasi AOA (C_Iter = 1 s.d. M_Iter = 30)</span>
-  1. Hitung MOA(C_Iter) dan MOP(C_Iter).
-  2. Untuk tiap solusi i dan tugas j, bangkitkan r1, r2, r3 di [0, 1]:
-     - Jika r1 &gt; MOA (Eksplorasi): r2 &lt; 0.5 -&gt; Pembagian (/), else Perkalian (*)
-     - Else (Eksploitasi)        : r3 &lt; 0.5 -&gt; Pengurangan (-), else Penjumlahan (+)
-     - Diskretkan &amp; klip posisi ke rentang indeks VM valid [LB, UB].
-  3. Evaluasi ulang Fitness (dengan penalti jika melanggar kapasitas prediksi Markov) &amp; perbarui best(x).
-
-<span class="syn-kw">STEP 5:</span> <span class="syn-fn">Eksekusi Jadwal</span>
-  Terapkan best(x) ke VM tujuan dan hitung Makespan, Delay, Throughput, Energy, serta PIR.</code></pre>
-            </div>
-          </div>
+          <span class="slide-tag">POS 05 &bull; SIMULASI BERTAHAP MARKOV + AOA</span>
+          <h2 style="font-size:20px; font-weight:800; margin-bottom:4px;">Cara Kerja Hybrid HMCDS (Play Bertahap)</h2>
+          <p style="font-size:12px; color:#475569; margin-bottom:6px;">
+            Klik <strong>▶ Play Tahapan</strong> atau <strong>Next ⏭</strong> untuk melihat bagaimana Markov Chain dan AOA bekerja sama langkah demi langkah:
+          </p>
+          <div id="hmcdsStepperMount"></div>
         </div>
 
         <!-- SLIDE 6: Eksperimen & Benchmark NASA iPSC/860 -->
@@ -480,6 +401,7 @@
 
   <script src="js/data.js"></script>
   <script src="js/audio.js"></script>
+  <script src="js/hmcds-stepper.js"></script>
   <script src="js/game-engine.js"></script>
   <script src="js/game-ui.js"></script>
 </body>

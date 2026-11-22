@@ -74,6 +74,9 @@ function openSlideWindow(slideIdx) {
   }
 
   updateHMCDSimulatorUI();
+  if (typeof HMCDS_Stepper !== 'undefined') {
+    HMCDS_Stepper.render();
+  }
 }
 
 function closeSlideWindow() {
@@ -180,4 +183,7 @@ function updateHMCDSimulatorUI() {
 function runHMCDSimulation() {
   CloudAudio.playAOABeam();
   updateHMCDSimulatorUI();
+  if (typeof HMCDS_Stepper !== 'undefined') {
+    HMCDS_Stepper.render();
+  }
 }

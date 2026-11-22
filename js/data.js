@@ -111,17 +111,16 @@ const HMCDS_SIM_DATA = {
   }
 };
 
-// Rute 3D Menanjak: IoT Valley (y=0) -> Fog Edge Plateau (y=4.5) -> Cloud Sky Citadel (y=9.0)
+// Rute 3D Menanjak Ringkas: IoT Valley (y=0) -> Fog Edge Plateau (y=3.0) -> Cloud Sky Citadel (y=6.5)
 const ROAD_WAYPOINTS = [
-  { x: 0,   y: 0.0, z: 22 },   // Titik Awal Drone CF_Manager
-  { x: 0,   y: 0.0, z: 6 },    // POS 1 (IoT Valley)
-  { x: -18, y: 0.0, z: -12 },  // POS 2 (Gerbang IoT -> Fog)
-  { x: -34, y: 2.2, z: -32 },  // Tanjakan ke Fog Plateau
-  { x: -38, y: 4.5, z: -56 },  // POS 3 (Fog Plateau - Markov)
-  { x: -12, y: 4.5, z: -76 },  // POS 4 (Fog Plateau - AOA)
-  { x: 18,  y: 6.5, z: -96 },  // POS 5 (Jembatan Fog-Cloud)
-  { x: 32,  y: 9.0, z: -122 }, // POS 6 (Cloud Citadel - Benchmark)
-  { x: 4,   y: 9.0, z: -148 }  // POS 7 (Cloud Citadel Peak - Final)
+  { x: 0,   y: 0.0, z: 14 },   // Titik Awal Drone CF_Manager
+  { x: 0,   y: 0.0, z: 4 },    // POS 1 (IoT Sensor Valley)
+  { x: -10, y: 0.0, z: -8 },   // POS 2 (Gerbang CF_Manager)
+  { x: -16, y: 3.0, z: -22 },  // POS 3 (Fog Plateau - Markov Chain)
+  { x: -2,  y: 3.0, z: -35 },  // POS 4 (Fog Plateau - AOA)
+  { x: 12,  y: 4.8, z: -48 },  // POS 5 (Jembatan Fog-Cloud - Alur HMCDS)
+  { x: 14,  y: 6.5, z: -62 },  // POS 6 (Cloud Citadel - Benchmark)
+  { x: 0,   y: 6.5, z: -74 }   // POS 7 (Puncak Cloud Citadel - Final)
 ];
 
 // 7 Pos Cluster Bermasalah -> 7 Slide Materi HMCDS
@@ -131,11 +130,11 @@ const CLUSTER_STATIONS = [
     posNum: 1,
     layerName: 'Lapisan 1: IoT Sensor Valley',
     icon: '📡',
-    name: 'POS 1 • SENSOR GATEWAY OVERLOAD',
-    slideTitle: 'Slide 1: Identitas Jurnal & 3 Masalah Utama Fog–Cloud',
+    name: 'POS 1 • SENSOR GATEWAY',
+    slideTitle: 'Slide 1: Latar Belakang & 3 Masalah Fog–Cloud',
     x: 0,
     y: 0.0,
-    z: 6,
+    z: 4,
     color: 0x06b6d4
   },
   {
@@ -143,11 +142,11 @@ const CLUSTER_STATIONS = [
     posNum: 2,
     layerName: 'Lapisan 1→2: Gerbang CF_Manager',
     icon: '🚦',
-    name: 'POS 2 • CF_MANAGER CLASSIFIER',
+    name: 'POS 2 • CF_MANAGER',
     slideTitle: 'Slide 2: Arsitektur 3 Lapis & Klasifikasi Tugas',
-    x: -18,
+    x: -10,
     y: 0.0,
-    z: -12,
+    z: -8,
     color: 0x38bdf8
   },
   {
@@ -155,11 +154,11 @@ const CLUSTER_STATIONS = [
     posNum: 3,
     layerName: 'Lapisan 2: Fog Edge Plateau',
     icon: '🔮',
-    name: 'POS 3 • MARKOV STATE FORECASTER',
-    slideTitle: 'Slide 3: Tahap 1 — Prediksi Beban VM (Markov Chain)',
-    x: -38,
-    y: 4.5,
-    z: -56,
+    name: 'POS 3 • MARKOV FORECASTER',
+    slideTitle: 'Slide 3: Tahap 1 — Prediksi Beban (Markov Chain)',
+    x: -16,
+    y: 3.0,
+    z: -22,
     color: 0x22d3ee
   },
   {
@@ -167,11 +166,11 @@ const CLUSTER_STATIONS = [
     posNum: 4,
     layerName: 'Lapisan 2: Fog Edge Plateau',
     icon: '⚙️',
-    name: 'POS 4 • AOA ARITHMETIC CORE',
-    slideTitle: 'Slide 4: Tahap 2 — Optimasi Penjadwalan (AOA)',
-    x: -12,
-    y: 4.5,
-    z: -76,
+    name: 'POS 4 • AOA CORE',
+    slideTitle: 'Slide 4: Tahap 2 — Optimasi Jadwal (AOA)',
+    x: -2,
+    y: 3.0,
+    z: -35,
     color: 0xf59e0b
   },
   {
@@ -179,11 +178,11 @@ const CLUSTER_STATIONS = [
     posNum: 5,
     layerName: 'Jembatan Fog–Cloud',
     icon: '🔗',
-    name: 'POS 5 • HYBRID SYNC BRIDGE',
-    slideTitle: 'Slide 5: Alur Eksekusi & Pseudocode Hybrid HMCDS',
-    x: 18,
-    y: 6.5,
-    z: -96,
+    name: 'POS 5 • HYBRID HMCDS',
+    slideTitle: 'Slide 5: Simulasi Tahap Kerja Markov + AOA',
+    x: 12,
+    y: 4.8,
+    z: -48,
     color: 0xa855f7
   },
   {
@@ -191,11 +190,11 @@ const CLUSTER_STATIONS = [
     posNum: 6,
     layerName: 'Lapisan 3: Cloud Sky Citadel',
     icon: '📊',
-    name: 'POS 6 • NASA iPSC/860 BENCHMARK',
-    slideTitle: 'Slide 6: Eksperimen & Hasil Evaluasi Empiris',
-    x: 32,
-    y: 9.0,
-    z: -122,
+    name: 'POS 6 • BENCHMARK NASA',
+    slideTitle: 'Slide 6: Hasil Eksperimen NASA iPSC/860',
+    x: 14,
+    y: 6.5,
+    z: -62,
     color: 0x3b82f6
   },
   {
@@ -203,11 +202,11 @@ const CLUSTER_STATIONS = [
     posNum: 7,
     layerName: 'Puncak Cloud Citadel',
     icon: '🏆',
-    name: 'POS 7 • HMCDS COMMAND CORE',
-    slideTitle: 'Slide 7: Kesimpulan, Live Simulator & Glosarium Q&A',
-    x: 4,
-    y: 9.0,
-    z: -148,
+    name: 'POS 7 • HMCDS FINAL',
+    slideTitle: 'Slide 7: Kesimpulan, Simulator & Q&A',
+    x: 0,
+    y: 6.5,
+    z: -74,
     color: 0x10b981
   }
 ];

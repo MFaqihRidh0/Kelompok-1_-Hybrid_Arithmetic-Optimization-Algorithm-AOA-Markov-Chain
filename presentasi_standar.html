@@ -97,15 +97,12 @@
     </section>
 
     <section class="std-slide">
-      <span class="slide-tag">SLIDE 5 &bull; ALUR EKSEKUSI HYBRID</span>
-      <h2 style="font-size:24px; font-weight:800; margin-bottom:10px;">5 Langkah Algoritma HMCDS</h2>
-      <ol style="font-size:13.5px; margin-left:20px; line-height:1.75;">
-        <li><strong>Step 1 (Fog Broker):</strong> Pisahkan Real-Time (Fog) &amp; Non-Real-Time (Fog+Cloud), lalu hitung <code>LOAD(i)</code>.</li>
-        <li><strong>Step 2 (Markov Chain):</strong> Bentuk matriks transisi $P_{ij}$ dan tandai VM <code>LOW_LOAD</code>, <code>NORMAL</code>, atau <code>OVERLOADED</code>.</li>
-        <li><strong>Step 3 (Inisialisasi AOA):</strong> Bangkitkan populasi $N_{pop} = 10$ vektor pemetaan valid (non-Overloaded).</li>
-        <li><strong>Step 4 (Loop AOA $1..30$):</strong> Perbarui solusi dengan $\div, \times, -, +$ dan evaluasi Fitness dengan penalti kapasitas Markov.</li>
-        <li><strong>Step 5 (Eksekusi):</strong> Terapkan jadwal terbaik <code>best(x)</code> dan ukur Makespan, Delay, Throughput, Energy, serta PIR.</li>
-      </ol>
+      <span class="slide-tag">SLIDE 5 &bull; SIMULASI BERTAHAP MARKOV + AOA</span>
+      <h2 style="font-size:24px; font-weight:800; margin-bottom:6px;">Cara Kerja Hybrid HMCDS (Play Bertahap)</h2>
+      <p style="font-size:13px; color:#475569; margin-bottom:8px;">
+        Klik <strong>▶ Play Tahapan</strong> atau <strong>Next ⏭</strong> untuk menjalankan simulasi langkah demi langkah bagaimana Markov Chain dan AOA bekerja sama:
+      </p>
+      <div id="hmcdsStepperMount"></div>
     </section>
 
     <section class="std-slide">
@@ -172,6 +169,7 @@
   </footer>
 
   <script src="js/data.js"></script>
+  <script src="js/hmcds-stepper.js"></script>
   <script src="js/game-ui.js"></script>
   <script src="js/presentation.js"></script>
 </body>

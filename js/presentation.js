@@ -57,4 +57,7 @@ window.addEventListener('DOMContentLoaded', () => {
   if (typeof updateHMCDSimulatorUI === 'function') {
     updateHMCDSimulatorUI();
   }
+  if (typeof HMCDS_Stepper !== 'undefined') {
+    HMCDS_Stepper.render();
+  }
 });
