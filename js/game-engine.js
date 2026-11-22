@@ -41,16 +41,18 @@ const activeDomes = [];
 const spinningFans = [];
 const iotBeacons = [];
 const ambientDataOrbs = [];
+const driftingClouds = [];
+let sunsetSunGroup = null;
 
 let stabilizedCount = 0;
 
 function initGameEngine() {
   const container = document.getElementById('gameCanvasContainer');
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x090818);
-  scene.fog = new THREE.FogExp2(0x090818, 0.0055);
+  scene.background = new THREE.Color(0x2b193d);
+  scene.fog = new THREE.FogExp2(0x3a2042, 0.0042);
 
-  camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 360);
+  camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 400);
   camera.position.set(0, 9.5, 25.0);
 
   renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -63,6 +65,7 @@ function initGameEngine() {
   clock = new THREE.Clock();
 
   setupLighting();
+  buildSunsetSkyAndClouds();
   buildThreeLayerWorld();
   buildHeroDrone();
   buildAllClusterStations();
@@ -74,11 +77,11 @@ function initGameEngine() {
 }
 
 function setupLighting() {
-  hemiLight = new THREE.HemisphereLight(0xe0f2fe, 0x1e1b4b, 0.65);
+  hemiLight = new THREE.HemisphereLight(0xffd6a5, 0x3b2d54, 0.95);
   scene.add(hemiLight);
 
-  dirLight = new THREE.DirectionalLight(0xfef3c7, 0.95);
-  dirLight.position.set(35, 65, 30);
+  dirLight = new THREE.DirectionalLight(0xffb066, 1.3);
+  dirLight.position.set(28, 42, -55);
   dirLight.castShadow = true;
   dirLight.shadow.mapSize.width = 2048;
   dirLight.shadow.mapSize.height = 2048;
@@ -89,11 +92,93 @@ function setupLighting() {
   dirLight.shadow.camera.bottom = -d;
   scene.add(dirLight);
 
-  introSpotLight = new THREE.SpotLight(0x38bdf8, 4.5, 36, Math.PI / 4, 0.35, 1.2);
+  introSpotLight = new THREE.SpotLight(0x38bdf8, 4.0, 36, Math.PI / 4, 0.35, 1.2);
   introSpotLight.position.set(0, 15, 14);
   introSpotLight.target.position.set(0, 0, 14);
   scene.add(introSpotLight);
   scene.add(introSpotLight.target);
+}
+
+function buildSunsetSkyAndClouds() {
+  // Sunset Sky Gradient Dome
+  const canvas = document.createElement('canvas');
+  canvas.width = 32;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 256);
+  grad.addColorStop(0.0, '#1e1b4b');   // Zenith twilight indigo
+  grad.addColorStop(0.35, '#4c1d57');  // Upper violet
+  grad.addColorStop(0.55, '#9d3656');  // Warm rose-coral
+  grad.addColorStop(0.72, '#ea580c');  // Sunset orange
+  grad.addColorStop(0.86, '#fdba74');  // Golden horizon
+  grad.addColorStop(1.0, '#2b193d');   // Lower ground blend
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 32, 256);
+
+  const skyTex = new THREE.CanvasTexture(canvas);
+  const skyDome = new THREE.Mesh(
+    new THREE.SphereGeometry(210, 32, 24),
+    new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, fog: false })
+  );
+  skyDome.position.set(0, 10, -30);
+  scene.add(skyDome);
+
+  // Glowing Orange Sunset Sun + Halo Rings
+  sunsetSunGroup = new THREE.Group();
+  sunsetSunGroup.position.set(28, 24, -145);
+
+  const sunCore = new THREE.Mesh(
+    new THREE.SphereGeometry(10.5, 24, 24),
+    new THREE.MeshBasicMaterial({ color: 0xffedd5, fog: false })
+  );
+  sunsetSunGroup.add(sunCore);
+
+  const sunMid = new THREE.Mesh(
+    new THREE.SphereGeometry(13.2, 24, 24),
+    new THREE.MeshBasicMaterial({ color: 0xf97316, transparent: true, opacity: 0.45, fog: false })
+  );
+  sunsetSunGroup.add(sunMid);
+
+  const sunOuter = new THREE.Mesh(
+    new THREE.SphereGeometry(17.0, 24, 24),
+    new THREE.MeshBasicMaterial({ color: 0xfb923c, transparent: true, opacity: 0.2, fog: false })
+  );
+  sunsetSunGroup.add(sunOuter);
+  scene.add(sunsetSunGroup);
+
+  // 14 Fluffy Sunset Clouds drifting slowly across the sky
+  const cloudMat = new THREE.MeshStandardMaterial({
+    color: 0xffedd5,
+    emissive: 0xf97316,
+    emissiveIntensity: 0.22,
+    roughness: 0.9,
+    transparent: true,
+    opacity: 0.88
+  });
+
+  for (let i = 0; i < 14; i++) {
+    const cg = new THREE.Group();
+    const cx = -85 + (i / 14) * 170 + (Math.random() - 0.5) * 12;
+    const cy = 12 + (i % 4) * 3.5 + Math.random() * 2;
+    const cz = -15 - (i % 5) * 22;
+    cg.position.set(cx, cy, cz);
+
+    const puffs = [
+      [-1.8, 0, 0, 1.5],
+      [0, 0.55, 0, 2.2],
+      [1.9, -0.1, 0.2, 1.6],
+      [0.6, 0.15, -0.8, 1.35]
+    ];
+    puffs.forEach(([ox, oy, oz, r]) => {
+      const s = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 12), cloudMat);
+      s.position.set(ox, oy, oz);
+      s.scale.set(1.25, 0.72, 0.95);
+      cg.add(s);
+    });
+
+    scene.add(cg);
+    driftingClouds.push({ group: cg, speed: 0.65 + (i % 3) * 0.35 });
+  }
 }
 
 function createGridTexture(bgHex, lineHex, repeatX = 36, repeatY = 36) {
@@ -348,32 +433,74 @@ function buildThreeLayerWorld() {
   fogEdges.position.copy(fogPlatform.position);
   scene.add(fogEdges);
 
-  // 15 Fog VM Server Racks around Fog Plateau
-  const fogRackTex = createServerRackTexture('#22d3ee');
-  for (let i = 0; i < 15; i++) {
-    const angle = (i / 15) * Math.PI * 2;
-    const rx = -9 + Math.cos(angle) * 18.5;
-    const rz = -29 + Math.sin(angle) * 8.8;
-    const h = 2.0 + (i % 3) * 0.7;
+  // Smooth Continuous Winding & Ascending Cyber-Road (dibangun dulu agar rak server tidak menabrak jalan)
+  const pts = ROAD_WAYPOINTS.map(w => new THREE.Vector3(w.x, w.y, w.z));
+  roadCurve = new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.45);
+  roadSamplePoints = roadCurve.getSpacedPoints(450);
+  buildSmoothCyberRoad(roadCurve, 7.6, 280);
 
+  // 15 Fog VM Edge Server Racks with Proper Plinth, Brushed Steel Body, Front Rack Glass & Rooftop HVAC Cooling Fan
+  const fogRackTex = createServerRackTexture('#22d3ee');
+  const cabinetMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.42, metalness: 0.55 });
+  const plinthMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.6, metalness: 0.35 });
+  const shroudMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.65 });
+  const bladeMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.45 });
+  const frontGlassMat = new THREE.MeshBasicMaterial({ map: fogRackTex });
+
+  let placedFogVMs = 0;
+  for (let i = 0; i < 24 && placedFogVMs < 15; i++) {
+    const angle = (i / 24) * Math.PI * 2;
+    const rx = -9 + Math.cos(angle) * 19.0;
+    const rz = -29 + Math.sin(angle) * 9.2;
+
+    // Skip jika terlalu dekat dengan jalan agar tidak menghalangi rute
+    let tooCloseToRoad = false;
+    for (let s = 0; s < roadSamplePoints.length; s += 4) {
+      if (Math.hypot(rx - roadSamplePoints[s].x, rz - roadSamplePoints[s].z) < 5.6) {
+        tooCloseToRoad = true;
+        break;
+      }
+    }
+    if (tooCloseToRoad) continue;
+    placedFogVMs++;
+
+    const h = 2.1 + (placedFogVMs % 3) * 0.55;
     const rackGroup = new THREE.Group();
     rackGroup.position.set(rx, 2.97, rz);
+    rackGroup.lookAt(-9, 2.97, -29);
 
-    const tower = new THREE.Mesh(
-      new THREE.BoxGeometry(1.3, h, 1.3),
-      new THREE.MeshStandardMaterial({ map: fogRackTex, roughness: 0.4, metalness: 0.5 })
-    );
-    tower.position.y = h / 2;
-    tower.castShadow = true;
-    rackGroup.add(tower);
+    // Concrete/steel plinth base
+    const plinth = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.22, 1.7), plinthMat);
+    plinth.position.y = 0.11;
+    rackGroup.add(plinth);
 
-    const fan = new THREE.Mesh(
-      new THREE.BoxGeometry(0.95, 0.08, 0.2),
-      new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
-    );
-    fan.position.y = h + 0.12;
-    rackGroup.add(fan);
-    spinningFans.push(fan);
+    // Brushed-steel server cabinet body
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.35, h, 1.35), cabinetMat);
+    body.position.y = 0.22 + h / 2;
+    body.castShadow = true;
+    rackGroup.add(body);
+
+    // Front glowing server rack LED panel
+    const frontPanel = new THREE.Mesh(new THREE.PlaneGeometry(1.08, h * 0.84), frontGlassMat);
+    frontPanel.position.set(0, 0.22 + h / 2, 0.69);
+    rackGroup.add(frontPanel);
+
+    // Rooftop HVAC Cooling Fan Shroud (ring housing)
+    const roofY = 0.22 + h;
+    const shroud = new THREE.Mesh(new THREE.CylinderGeometry(0.54, 0.58, 0.22, 16, 1, true), shroudMat);
+    shroud.position.y = roofY + 0.11;
+    rackGroup.add(shroud);
+
+    // 4-Blade Cross Cooling Fan Propeller inside Shroud
+    const fanProp = new THREE.Group();
+    fanProp.position.y = roofY + 0.12;
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.1, 10), shroudMat);
+    fanProp.add(hub);
+    const blade1 = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.04, 0.14), bladeMat);
+    const blade2 = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.04, 0.88), bladeMat);
+    fanProp.add(blade1, blade2);
+    rackGroup.add(fanProp);
+    spinningFans.push(fanProp);
 
     scene.add(rackGroup);
   }
@@ -425,46 +552,16 @@ function buildThreeLayerWorld() {
     scene.add(dcGroup);
   });
 
-  // Stylized 3D Cyber-Clouds around Cloud Citadel
-  const cloudMat = new THREE.MeshStandardMaterial({
-    color: 0xe0f2fe, emissive: 0x1d4ed8, emissiveIntensity: 0.25, transparent: true, opacity: 0.78
-  });
-  [[-15, 10.5, -58], [26, 11.5, -57], [-16, 12.5, -78], [25, 13.5, -79]].forEach(([cx, cy, cz]) => {
-    const cg = new THREE.Group();
-    cg.position.set(cx, cy, cz);
-    [[-1.3, 0, 0, 1.4], [0, 0.45, 0, 1.9], [1.4, -0.1, 0.2, 1.3]].forEach(([ox, oy, oz, r]) => {
-      const s = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 12), cloudMat);
-      s.position.set(ox, oy, oz);
-      cg.add(s);
-    });
-    scene.add(cg);
-  });
-
   // Ascending Ambient Data Orbs
   for (let i = 0; i < 24; i++) {
     const orb = new THREE.Mesh(
       new THREE.OctahedronGeometry(0.2, 0),
-      new THREE.MeshBasicMaterial({ color: i % 2 === 0 ? 0x22d3ee : 0x60a5fa })
+      new THREE.MeshBasicMaterial({ color: i % 2 === 0 ? 0x22d3ee : 0xfbbf24 })
     );
     orb.position.set((Math.random() - 0.5) * 40, Math.random() * 10, 10 - Math.random() * 82);
     scene.add(orb);
     ambientDataOrbs.push({ mesh: orb, speed: 1.2 + Math.random() * 1.4 });
   }
-
-  // Smooth Continuous Winding & Ascending Cyber-Road
-  const pts = ROAD_WAYPOINTS.map(w => new THREE.Vector3(w.x, w.y, w.z));
-  roadCurve = new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.45);
-  roadSamplePoints = roadCurve.getSpacedPoints(450);
-  buildSmoothCyberRoad(roadCurve, 7.6, 280);
-
-  // Stars in background sky
-  const starGeo = new THREE.BufferGeometry();
-  const starVerts = [];
-  for (let i = 0; i < 360; i++) {
-    starVerts.push((Math.random() - 0.5) * 240, 18 + Math.random() * 80, -30 + (Math.random() - 0.5) * 200);
-  }
-  starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVerts, 3));
-  scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xbae6fd, size: 0.55 })));
 }
 
 function clampPlayerToRoad(posVec) {
@@ -1178,8 +1275,16 @@ function gameLoop() {
     if (playerParts.rightOrb) playerParts.rightOrb.position.y = 1.5 + Math.cos(hoverTime * 4) * 0.12;
   }
 
-  // Animate Environment Elements
-  spinningFans.forEach(f => { f.rotation.y += dt * 6; });
+  // Animate Environment Elements (HVAC Cooling Fans, Sunset Sun, Drifting Clouds)
+  spinningFans.forEach(f => { f.rotation.y += dt * 7.5; });
+  if (sunsetSunGroup) {
+    const pulse = 1 + Math.sin(hoverTime * 1.4) * 0.035;
+    sunsetSunGroup.scale.set(pulse, pulse, pulse);
+  }
+  driftingClouds.forEach(c => {
+    c.group.position.x += c.speed * dt;
+    if (c.group.position.x > 95) c.group.position.x = -95;
+  });
   iotBeacons.forEach(b => {
     const s = 0.85 + Math.sin(hoverTime * 4 + b.phase) * 0.3;
     b.mesh.scale.set(s, s, s);
