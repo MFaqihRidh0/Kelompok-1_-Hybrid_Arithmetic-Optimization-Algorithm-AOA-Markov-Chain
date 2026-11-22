@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mode Presentasi Standar — Hybrid HMCDS (Markov Chain + AOA)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="css/game.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body style="overflow:auto; background:#f8fafc; color:#0f172a; user-select:text;">
+
+  <header class="topbar">
+    <div class="topbar-title">📊 Presentasi Hybrid HMCDS (Markov Chain + AOA) — Mode Standar</div>
+    <div class="topbar-actions">
+      <a href="presentasi_game.html" class="btn-mode-game">🚁 Mainkan Mode Game 3D</a>
+    </div>
+  </header>
+  <div class="progress-track"><div class="progress-fill" id="stdProgressBar"></div></div>
+
+  <main class="slides-container">
+
+    <section class="std-slide active">
+      <span class="slide-tag">SLIDE 1 &bull; IDENTITAS &amp; LATAR BELAKANG</span>
+      <h2 style="font-size:24px; font-weight:800; margin-bottom:10px;">Hybrid Markov Chain-Based Dynamic Scheduling (HMCDS)</h2>
+      <div class="card" style="border-left:4px solid #0284c7; margin-bottom:14px;">
+        <p style="font-size:13px; line-height:1.55;">
+          <strong>Judul Jurnal:</strong> <em>Hybrid Markov chain-based dynamic scheduling to improve load balancing performance in fog-cloud environment</em> (Khaledian et al., 2025, <em>Sustainable Computing: Informatics and Systems</em> Vol. 45, Article 101077).
+        </p>
+      </div>
+      <div class="grid-3">
+        <div class="card" style="border-left:4px solid #ef4444;">
+          <h4 style="color:#b91c1c;">1. Load Instability</h4>
+          <p style="font-size:12.5px; margin-top:4px;">Ketidakstabilan beban kerja memicu <em>bottleneck</em> pada node Fog yang kapasitasnya terbatas.</p>
+        </div>
+        <div class="card" style="border-left:4px solid #f59e0b;">
+          <h4 style="color:#b45309;">2. Makespan &amp; Delay Tinggi</h4>
+          <p style="font-size:12.5px; margin-top:4px;">Antrean panjang fatal bagi aplikasi <em>real-time</em> (kendaraan otonom, medis, otomasi industri).</p>
+        </div>
+        <div class="card" style="border-left:4px solid #8b5cf6;">
+          <h4 style="color:#6d28d9;">3. Underutilization of VM</h4>
+          <p style="font-size:12.5px; margin-top:4px;">Sebagian VM <em>overload</em> sementara VM lain <em>idle</em>, memboroskan konsumsi energi.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="std-slide">
+      <span class="slide-tag">SLIDE 2 &bull; ARSITEKTUR 3 LAPIS</span>
+      <h2 style="font-size:24px; font-weight:800; margin-bottom:10px;">Three-Layer Architecture &amp; Klasifikasi Tugas</h2>
+      <div class="grid-3" style="margin-bottom:14px;">
+        <div class="card"><h4>1. IoT / Sensor Layer</h4><p style="font-size:12.5px;">Menghasilkan tugas dari perangkat pintar.</p></div>
+        <div class="card"><h4>2. Fog Layer (<code>CF_Manager</code>)</h4><p style="font-size:12.5px;"><strong>15 VM</strong> (100–2.800 MIPS, RAM 0,5 GB, Storage 10 GB, BW 1 GB/s).</p></div>
+        <div class="card"><h4>3. Cloud Layer</h4><p style="font-size:12.5px;"><strong>2 Data Center, 4 Host, 40 VM</strong> (3.000–5.000 MIPS, RAM 1 GB, Storage 20 GB, BW 0,5 GB/s).</p></div>
+      </div>
+      <div class="card">
+        <h4>Klasifikasi Tugas oleh <code>CF_Manager</code></h4>
+        <ul style="font-size:13px; margin-left:18px; margin-top:6px; line-height:1.6;">
+          <li><strong>Urgensi:</strong> <em>Real-Time</em> (wajib Fog Layer) vs <em>Non-Real-Time</em> (Fog &amp; Cloud Layer).</li>
+          <li><strong>Sumber Daya:</strong> <em>Lightweight</em> (Edge/Fog) vs <em>Heavyweight</em> (Fog besar / Cloud).</li>
+          <li><strong>Ketergantungan:</strong> <em>Independent</em> vs <em>Dependent</em> (dimodelkan dengan DAG).</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="std-slide">
+      <span class="slide-tag">SLIDE 3 &bull; TAHAP 1: MARKOV CHAIN</span>
+      <h2 style="font-size:24px; font-weight:800; margin-bottom:10px;">Prediksi Beban VM Menggunakan Markov Chain</h2>
+      <div class="math-box">
+        $$L_i(t) = \lambda_1 E_i(t) + \lambda_2 W_i(t), \quad \sum \lambda_k = 1 \qquad | \qquad \text{LOAD}(i) = \sum_{k=1}^{n} L_k(t)$$
+      </div>
+      <div class="math-box">
+        $$P_{ij}(t) = P\{X_{n+1} = j \mid x_n = i\}, \quad \sum_{j=1}^{N} a_{ij} = 1 \qquad | \qquad P_{ij} = \sum_{t=2}^{n} \frac{P_{ij}^{(t)} + P_{ji}^{(t)}}{2}$$
+      </div>
+      <p style="font-size:13px; margin-top:8px;">
+        Status VM diklasifikasikan menjadi <code>V1=N</code> (Normal), <code>V2=U</code> (Low Load), dan <code>V3=O</code> (Overloaded). Jika $P_{ij} \ge \text{MAX}(d_i)$, tugas segera dimigrasikan ke VM dengan $P_{ij} \le \text{MIN}(d_i)$.
+      </p>
+    </section>
+
+    <section class="std-slide">
+      <span class="slide-tag">SLIDE 4 &bull; TAHAP 2: AOA</span>
+      <h2 style="font-size:24px; font-weight:800; margin-bottom:10px;">Optimasi Penjadwalan Menggunakan AOA</h2>
+      <div class="math-box">
+        $$\text{ETC}_{ij} = \frac{T_{len}^i}{VM_{pow}^j} \qquad | \qquad \text{Cost}_{\text{fog}} = \min \left( \max_{j} \sum_{i} \text{ETC}_{ij} \right) \qquad | \qquad F = \alpha D + (1-\alpha)E$$
+      </div>
+      <div class="math-box">
+        $$\text{MOA}(C\_Iter) = \text{Min} + C\_Iter \left(\frac{\text{Max} - \text{Min}}{M\_Iter}\right) \qquad | \qquad \text{MOP}(C\_Iter) = 1 - \frac{C\_Iter^{1/\alpha}}{M\_Iter^{1/\alpha}} \quad (\alpha = 5)$$
+      </div>
+      <p style="font-size:13px; margin-top:8px;">
+        <strong>Eksplorasi ($r_1 &gt; \text{MOA}$):</strong> Operator Pembagian ($\div$) &amp; Perkalian ($\times$).<br>
+        <strong>Eksploitasi ($r_1 \le \text{MOA}$):</strong> Operator Pengurangan ($-$) &amp; Penjumlahan ($+$).
+      </p>
+    </section>
+
+    <section class="std-slide">
+      <span class="slide-tag">SLIDE 5 &bull; ALUR EKSEKUSI HYBRID</span>
+      <h2 style="font-size:24px; font-weight:800; margin-bottom:10px;">5 Langkah Algoritma HMCDS</h2>
+      <ol style="font-size:13.5px; margin-left:20px; line-height:1.75;">
+        <li><strong>Step 1 (Fog Broker):</strong> Pisahkan Real-Time (Fog) &amp; Non-Real-Time (Fog+Cloud), lalu hitung <code>LOAD(i)</code>.</li>
+        <li><strong>Step 2 (Markov Chain):</strong> Bentuk matriks transisi $P_{ij}$ dan tandai VM <code>LOW_LOAD</code>, <code>NORMAL</code>, atau <code>OVERLOADED</code>.</li>
+        <li><strong>Step 3 (Inisialisasi AOA):</strong> Bangkitkan populasi $N_{pop} = 10$ vektor pemetaan valid (non-Overloaded).</li>
+        <li><strong>Step 4 (Loop AOA $1..30$):</strong> Perbarui solusi dengan $\div, \times, -, +$ dan evaluasi Fitness dengan penalti kapasitas Markov.</li>
+        <li><strong>Step 5 (Eksekusi):</strong> Terapkan jadwal terbaik <code>best(x)</code> dan ukur Makespan, Delay, Throughput, Energy, serta PIR.</li>
+      </ol>
+    </section>
+
+    <section class="std-slide">
+      <span class="slide-tag">SLIDE 6 &bull; HASIL EKSPERIMEN NASA iPSC/860</span>
+      <h2 style="font-size:24px; font-weight:800; margin-bottom:10px;">Perbandingan Benchmark &amp; Trade-off</h2>
+      <div class="grid-2">
+        <table class="data-table">
+          <thead><tr><th>Tugas</th><th>HMCDS (dtk)</th><th>FA</th><th>PSO</th><th>WOA</th><th>HHO</th></tr></thead>
+          <tbody>
+            <tr><td>500</td><td class="highlight-hmcds">6,86</td><td>7,46</td><td>8,96</td><td>10,98</td><td>15,43</td></tr>
+            <tr><td>1.000</td><td class="highlight-hmcds">13,41</td><td>14,72</td><td>15,63</td><td>21,34</td><td>30,84</td></tr>
+            <tr><td>1.500</td><td class="highlight-hmcds">19,21</td><td>20,87</td><td>24,61</td><td>29,84</td><td>43,21</td></tr>
+          </tbody>
+        </table>
+        <table class="data-table">
+          <thead><tr><th>Tugas (Makespan)</th><th>HMCDS</th><th>CSA</th><th>HGSWC</th><th>ChoA</th><th>WOA</th></tr></thead>
+          <tbody>
+            <tr><td>500</td><td class="highlight-hmcds">47,21</td><td>55,09</td><td>58,45</td><td>65,70</td><td>71,53</td></tr>
+            <tr><td>1.000</td><td class="highlight-hmcds">96,83</td><td>106,67</td><td>116,52</td><td>128,18</td><td>142,66</td></tr>
+            <tr><td>2.000</td><td class="highlight-hmcds">138,21</td><td>157,99</td><td>178,16</td><td>182,64</td><td>205,26</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:12.5px; margin-top:10px;"><strong>Trade-off 500 Tugas:</strong> Markov saja = 2,45 dtk | AOA saja = 4,34 dtk | Hybrid HMCDS = 6,86 dtk.</p>
+    </section>
+
+    <section class="std-slide">
+      <span class="slide-tag">SLIDE 7 &bull; KESIMPULAN &amp; SIMULATOR</span>
+      <h2 style="font-size:24px; font-weight:800; margin-bottom:10px;">Kesimpulan &amp; Simulator Interaktif</h2>
+      <div class="grid-3" style="margin-bottom:12px;">
+        <div class="card"><strong>Makespan:</strong> Membaik <strong>8,29%</strong></div>
+        <div class="card"><strong>Delay:</strong> Berkurang <strong>11,72%</strong></div>
+        <div class="card"><strong>PIR:</strong> Meningkat <strong>4,66%</strong> (hingga 55,86% vs HHO)</div>
+      </div>
+      <div class="sim-console-box">
+        <div class="sim-controls-row">
+          <select id="simAlgoSelect" class="sim-select" onchange="updateHMCDSimulatorUI()">
+            <option value="hmcds">Hybrid HMCDS (Markov + AOA)</option>
+            <option value="aoa">AOA Saja</option>
+            <option value="woa">WOA Baseline</option>
+          </select>
+          <select id="simTaskSelect" class="sim-select" onchange="updateHMCDSimulatorUI()">
+            <option value="500">500 Tugas</option>
+            <option value="1000">1.000 Tugas</option>
+            <option value="2000">2.000 Tugas</option>
+          </select>
+        </div>
+        <div class="grid-4">
+          <div class="sim-kpi-card"><div class="sim-kpi-label">Makespan</div><div class="sim-kpi-val" id="simMakespanVal">47.21 dtk</div></div>
+          <div class="sim-kpi-card"><div class="sim-kpi-label">Sched Time</div><div class="sim-kpi-val" id="simSchedVal">6.86 dtk</div></div>
+          <div class="sim-kpi-card"><div class="sim-kpi-label">Delay</div><div class="sim-kpi-val" id="simDelayVal">-11,72%</div></div>
+          <div class="sim-kpi-card"><div class="sim-kpi-label">PIR</div><div class="sim-kpi-val" id="simPirVal">+4,66%</div></div>
+        </div>
+        <div style="display:none;"><span id="simFogPct"></span><div id="simFogBar"></div><span id="simCloudPct"></span><div id="simCloudBar"></div><p id="simNoteText"></p></div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer-nav">
+    <button class="btn-nav" id="btnStdPrev" onclick="prevStdSlide()">&larr; Sebelumnya</button>
+    <span id="stdCounter" style="font-size:13px; font-weight:700;">Slide 1 / 7</span>
+    <button class="btn-nav" id="btnStdNext" onclick="nextStdSlide()">Berikutnya &rarr;</button>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/game-ui.js"></script>
+  <script src="js/presentation.js"></script>
+</body>
+</html>

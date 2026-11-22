@@ -1,0 +1,124 @@
+/* ==========================================================================
+   HMCDS HYBRID PRESENTATION — STANDARD SLIDE DECK FALLBACK MODE
+   ========================================================================== */
+
+:root {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --ink: #0f172a;
+  --muted: #475569;
+  --border: #cbd5e1;
+  --accent: #0284c7;
+  --emerald: #059669;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', 'Nunito', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.topbar-title {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-mode-game {
+  background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%);
+  color: #ffffff;
+  text-decoration: none;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.progress-track {
+  width: 100%;
+  height: 4px;
+  background: #cbd5e1;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #0284c7;
+  width: 14%;
+  transition: width 0.25s ease;
+}
+
+.slides-container {
+  flex: 1;
+  max-width: 1060px;
+  width: 100%;
+  margin: 22px auto;
+  padding: 0 20px;
+}
+
+.std-slide {
+  display: none;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 18px;
+  padding: 26px 30px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+.std-slide.active {
+  display: block;
+}
+
+.footer-nav {
+  background: #ffffff;
+  border-top: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  bottom: 0;
+}
+
+.btn-nav {
+  background: #0f172a;
+  color: #ffffff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-nav:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

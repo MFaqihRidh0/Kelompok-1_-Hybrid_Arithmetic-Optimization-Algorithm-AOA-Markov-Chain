@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/", "destination": "/presentasi_game.html" },
+    { "source": "/standar", "destination": "/presentasi_standar.html" }
+  ]
+}
