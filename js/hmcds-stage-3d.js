@@ -1,6 +1,7 @@
 // ============================================================================
-// HMCDS STAGE 3D — EMBEDDED THREE.JS TOPOLOGY FOR SLIDE PRESENTATION
-// Visualisasi 3D Cara Kerja Hybrid Markov Chain + AOA (Fog-Cloud Topology)
+// HMCDS STAGE 3D — AUTOMATIC CHAPTER-BY-CHAPTER (PER-BABAK) 3D VISUALIZER
+// Setiap Tab (CF_Manager, Markov Chain, AOA Eksplorasi, AOA Eksploitasi)
+// menjalankan animasi 3D otomatis secara bertahap lengkap dengan narasi live
 // ============================================================================
 
 window.HMCDSStage3D = (function () {
@@ -15,7 +16,6 @@ window.HMCDSStage3D = (function () {
   const laserLines = [];
   const networkPackets = [];
   const datacenterFans = [];
-  const datacenterBeacons = [];
   const aoaExploreDrones = [];
   const aoaExploitDrones = [];
   let goldenCrown = null;
@@ -26,7 +26,108 @@ window.HMCDSStage3D = (function () {
   let activeFlyingTasks = [];
   let landedTasks = [];
   let currentMode = 'topology';
+  let subStepIdx = 0;
+  let chapterTimer = null;
+  let autoCycleAll = false;
   const rackTextureCache = {};
+
+  const MODE_ORDER = ['topology', 'markov', 'aoa-explore', 'aoa-exploit'];
+
+  // Daftar Babak & Tahapan Otomatis di Setiap Tab 3D
+  const CHAPTER_SCRIPTS = {
+    'topology': [
+      {
+        stepLabel: 'BABAK 1 (1/3) • KEDATANGAN TUGAS IOT',
+        narration: 'Perangkat sensor IoT mengirim antrean tugas ke CF_Manager (Fog–Cloud Broker) di bagian atas. CF_Manager memantau beban awal LOAD(i) pada 15 Fog VM & 40 Cloud VM.',
+        camPos: [0, 24, 34],
+        camTarget: [0, 3.8, 0],
+        action: 'spawn_initial_mix'
+      },
+      {
+        stepLabel: 'BABAK 1 (2/3) • KLASIFIKASI REAL-TIME VS NON-RT',
+        narration: 'CF_Manager memilah tugas berdasarkan deadline: Tugas Real-Time (kubus biru & hijau) diarahkan ke Fog Cluster A & B, sedangkan Non-Real-Time berat (kubus ungu) ke Cloud Datacenter.',
+        camPos: [0, 22, 31],
+        camTarget: [0, 3.8, 1],
+        action: 'spawn_classified'
+      },
+      {
+        stepLabel: 'BABAK 1 (3/3) • DETEKSI KETIMPANGAN BEBAN AWAL',
+        narration: 'Karena kapasitas Fog Cluster B kecil (100–800 MIPS), antrean tugas cepat menumpuk di Fog B. Di sinilah prediksi Markov Chain dibutuhkan pada Babak 2!',
+        camPos: [-3, 19, 27],
+        camTarget: [0, 3.5, 4],
+        action: 'highlight_fogB_warning'
+      }
+    ],
+    'markov': [
+      {
+        stepLabel: 'BABAK 2 (1/3) • PEMINDAIAN MATRIKS TRANSISI P_ij',
+        narration: 'Markov Chain menghitung peluang transisi status beban P_ij(t) = P{X_{n+1}=j | x_n=i} secara memoryless. Cincin radar cyan memindai Fog Cluster A & Fog Cluster B.',
+        camPos: [-4, 18, 25],
+        camTarget: [-3, 3.5, 3],
+        action: 'markov_scan_start'
+      },
+      {
+        stepLabel: 'BABAK 2 (2/3) • PREDIKSI OVERLOAD (P_ij ≥ MAX)',
+        narration: 'Fog Cluster B terdeteksi memiliki P_ij ≥ MAX(d_i) → diprediksi akan OVERLOADED (Status V3 = O)! Kubah Perisai Markov aktif memblokir pengiriman tugas baru ke Fog B.',
+        camPos: [0, 15, 22],
+        camTarget: [0, 3.2, 7.5],
+        action: 'markov_block_overload'
+      },
+      {
+        stepLabel: 'BABAK 2 (3/3) • MIGRASI TUGAS KE VM LOW-LOAD (P_ij ≤ MIN)',
+        narration: 'Tugas berlebih dari Fog Cluster B otomatis dimigrasikan (terbang melengkung) menuju Fog Cluster A yang berstatus V2 = LOW-LOAD (P_ij ≤ MIN) hingga Fog B kembali NORMAL (V1)!',
+        camPos: [-6, 17, 24],
+        camTarget: [-5, 3.5, 2.5],
+        action: 'markov_migrate_tasks'
+      }
+    ],
+    'aoa-explore': [
+      {
+        stepLabel: 'BABAK 3 (1/3) • INISIALISASI POPULASI AOA (N_pop = 10)',
+        narration: 'Setelah VM Overloaded disaring oleh Markov, AOA membangkitkan 10 kandidat vektor pemetaan (Task → VM valid) dan menghitung nilai MOA serta MOP pada iterasi saat ini.',
+        camPos: [0, 23, 32],
+        camTarget: [0, 6.0, 0],
+        action: 'aoa_explore_init'
+      },
+      {
+        stepLabel: 'BABAK 3 (2/3) • EKSPLORASI GLOBAL (r₁ > MOA): OPERATOR ÷ DAN ×',
+        narration: 'Saat r₁ > MOA, Drone Pembagian (÷) & Perkalian (×) terbang mengorbit luas menjelajahi seluruh ruang solusi Fog–Cloud untuk mencegah algoritma terjebak di Local Optima.',
+        camPos: [4, 21, 29],
+        camTarget: [0, 6.5, 0],
+        action: 'aoa_explore_flights'
+      },
+      {
+        stepLabel: 'BABAK 3 (3/3) • EVALUASI FITNESS (MAKESPAN, DELAY & ENERGI)',
+        narration: 'Setiap kandidat jadwal dinilai dengan Cost_fog = min(max Σ ETC_ij) dan F = α·D + (1−α)·E. Kandidat dengan Makespan & Energi terendah disimpan sementara sebagai best(x).',
+        camPos: [-5, 20, 28],
+        camTarget: [0, 5.0, 0],
+        action: 'aoa_explore_eval'
+      }
+    ],
+    'aoa-exploit': [
+      {
+        stepLabel: 'BABAK 4 (1/3) • EKSPLOITASI LOKAL (r₁ ≤ MOA): OPERATOR − DAN +',
+        narration: 'Memasuki iterasi akhir, nilai MOA meningkat sehingga r₁ ≤ MOA. Drone Pengurangan (−) & Penjumlahan (+) mengorbit rapat di sekitar solusi terbaik best(x) untuk fine-tuning.',
+        camPos: [-11, 16, 16],
+        camTarget: [-11, 5.5, -2],
+        action: 'aoa_exploit_focus'
+      },
+      {
+        stepLabel: 'BABAK 4 (2/3) • KONVERGENSI JADWAL TERBAIK best(x)',
+        narration: 'Sinar Emas best(x) menyala! Pemetaan optimal ditemukan: tugas Real-Time diproses cepat di Fog Cluster A & B tanpa antrean, dan tugas Non-RT berat di Cloud Datacenter.',
+        camPos: [0, 21, 30],
+        camTarget: [0, 4.0, 0],
+        action: 'aoa_exploit_dispatch'
+      },
+      {
+        stepLabel: 'BABAK 4 (3/3) • EKSEKUSI SEIMBANG — MAKESPAN -8,29% & DELAY -11,72%',
+        narration: 'Seluruh tugas selesai dieksekusi dengan beban VM seimbang (Fog A: 68%, Fog B: 65%, Cloud: 66%, 0 Overload). Makespan lebih cepat 8,29% dan Delay turun 11,72%!',
+        camPos: [0, 23, 33],
+        camTarget: [0, 3.8, 0],
+        action: 'aoa_exploit_finish'
+      }
+    ]
+  };
 
   function getRackTexture(accentColorHex) {
     const key = String(accentColorHex);
@@ -199,7 +300,6 @@ window.HMCDSStage3D = (function () {
     ledRingMesh.position.set(pos[0], roofY + 0.22, pos[2]);
     tower.add(ledRingMesh);
 
-    // Rooftop HVAC Chillers
     const chillerOffsets = id === 'cloud' ? [[-0.85, -0.85], [0.85, -0.85], [0.0, 0.85]] : [[-0.75, 0], [0.75, 0]];
     chillerOffsets.forEach(([cx, cz], chIdx) => {
       const chillerGroup = new THREE.Group();
@@ -227,7 +327,6 @@ window.HMCDSStage3D = (function () {
       datacenterFans.push({ fanMesh: fanProp, baseSpeed: 0.07 + chIdx * 0.015 });
     });
 
-    // Satellite Server Racks around building
     const rackCount = 3;
     const rackRadius = 3.7;
     for (let i = 0; i < rackCount; i++) {
@@ -399,7 +498,6 @@ window.HMCDSStage3D = (function () {
   }
 
   function createAOADronesAndMarkovShield() {
-    // 2 Exploration Drones (÷ and ×)
     ['÷', '×'].forEach((op, idx) => {
       const dir = idx === 0 ? -1 : 1;
       const drone = buildQuadcopterMesh(0x0284c7, op);
@@ -407,13 +505,12 @@ window.HMCDSStage3D = (function () {
       aoaExploreDrones.push({
         group: drone,
         radius: 16.5 + idx * 2.5,
-        speed: 0.013 * dir,
+        speed: 0.014 * dir,
         angle: idx * Math.PI,
         height: 11.5 + idx * 1.4
       });
     });
 
-    // 2 Exploitation Drones (- and +)
     ['-', '+'].forEach((op, idx) => {
       const dir = idx === 0 ? -1 : 1;
       const drone = buildQuadcopterMesh(0x10b981, op);
@@ -422,13 +519,12 @@ window.HMCDSStage3D = (function () {
         group: drone,
         center: new THREE.Vector3(-11, 9.5, -2),
         radius: 4.6 + idx * 1.2,
-        speed: 0.025 * dir,
+        speed: 0.026 * dir,
         angle: idx * Math.PI,
         height: 9.8 + idx * 1.1
       });
     });
 
-    // Markov Chain Prediction Shield Dome over Fog Node B ([0, 0, 7.5])
     markovDome = new THREE.Mesh(
       new THREE.SphereGeometry(5.2, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2),
       new THREE.MeshBasicMaterial({ color: 0x06b6d4, wireframe: true, transparent: true, opacity: 0.55 })
@@ -445,27 +541,205 @@ window.HMCDSStage3D = (function () {
     dcScene.add(markovRing);
   }
 
-  function calculateLandingSlot(targetId, algo) {
+  function calculateLandingSlot(targetId, stackOverload = false) {
     const node = dcNodes[targetId];
     const count = node.landedCount || 0;
     node.landedCount = count + 1;
 
-    if (algo === 'woa' && targetId === 'fogB') {
-      const stackH = count * 0.42;
+    if (stackOverload) {
+      const stackH = count * 0.45;
       return {
-        x: (Math.random() - 0.5) * 0.45,
+        x: (Math.random() - 0.5) * 0.4,
         y: node.height + 0.3 + stackH,
-        z: (Math.random() - 0.5) * 0.45
-      };
-    } else {
-      const ang = (count * Math.PI * 2) / 5;
-      const radius = 2.2;
-      return {
-        x: Math.cos(ang) * radius,
-        y: 0.35 + Math.floor(count / 5) * 0.72,
-        z: Math.sin(ang) * radius
+        z: (Math.random() - 0.5) * 0.4
       };
     }
+    const ang = (count * Math.PI * 2) / 5;
+    const radius = 2.2;
+    return {
+      x: Math.cos(ang) * radius,
+      y: 0.35 + Math.floor(count / 5) * 0.72,
+      z: Math.sin(ang) * radius
+    };
+  }
+
+  function spawnTaskBatch(fromPosVec, targetList, stackOverloadOnFogB = false) {
+    targetList.forEach((targetId, idx) => {
+      const destNode = dcNodes[targetId];
+      if (!destNode) return;
+      const isCloud = targetId === 'cloud';
+      const cubeSize = isCloud ? 1.05 : (targetId === 'fogA' ? 0.85 : 0.72);
+      const cubeColor = isCloud ? 0x7c3aed : (targetId === 'fogA' ? 0x0284c7 : 0x059669);
+
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize),
+        new THREE.MeshStandardMaterial({
+          color: cubeColor,
+          emissive: cubeColor,
+          emissiveIntensity: 0.55,
+          roughness: 0.3
+        })
+      );
+      mesh.position.copy(fromPosVec);
+      mesh.castShadow = true;
+      dcScene.add(mesh);
+
+      const landOffset = calculateLandingSlot(targetId, stackOverloadOnFogB && targetId === 'fogB');
+      const endP = new THREE.Vector3(
+        destNode.pos.x + landOffset.x,
+        destNode.pos.y + landOffset.y,
+        destNode.pos.z + landOffset.z
+      );
+
+      const midX = (fromPosVec.x + endP.x) / 2;
+      const midZ = (fromPosVec.z + endP.z) / 2;
+      const midY = Math.max(fromPosVec.y, endP.y) + 3.6 + Math.random() * 1.5;
+      const ctrlP = new THREE.Vector3(midX, midY, midZ);
+
+      activeFlyingTasks.push({
+        mesh,
+        targetId,
+        startP: fromPosVec.clone(),
+        ctrlP,
+        endP,
+        progress: -(idx * 0.06),
+        speed: 0.022
+      });
+    });
+  }
+
+  function executeChapterAction(actionName) {
+    const brokerPos = new THREE.Vector3(0, 9.5, -12);
+    const fogBTop = new THREE.Vector3(0, 6.0, 7.5);
+
+    if (actionName === 'spawn_initial_mix') {
+      clearTasks();
+      aoaExploreDrones.forEach(d => d.group.visible = false);
+      aoaExploitDrones.forEach(d => d.group.visible = false);
+      if (markovDome) markovDome.visible = false;
+      if (markovRing) markovRing.visible = false;
+      if (goldenBeam) goldenBeam.visible = false;
+      setBillboardStatus('fogA', 'LOAD(1): 35% (V2 = LOW-LOAD)', 0x0284c7);
+      setBillboardStatus('fogB', 'LOAD(2): 58% (V1 = NORMAL)', 0x059669);
+      setBillboardStatus('cloud', 'LOAD(3): 40% (CLOUD POOL)', 0x7c3aed);
+      spawnTaskBatch(brokerPos, ['fogA', 'fogB', 'cloud', 'fogB', 'fogA', 'fogB']);
+    } else if (actionName === 'spawn_classified') {
+      setBillboardStatus('fogA', 'REAL-TIME → FOG CLUSTER A', 0x0284c7);
+      setBillboardStatus('fogB', 'REAL-TIME → FOG CLUSTER B', 0xf59e0b);
+      setBillboardStatus('cloud', 'NON-REAL-TIME → CLOUD DC', 0x7c3aed);
+      spawnTaskBatch(brokerPos, ['fogB', 'fogB', 'fogA', 'cloud', 'fogB', 'cloud'], true);
+    } else if (actionName === 'highlight_fogB_warning') {
+      setBillboardStatus('fogB', 'PERINGATAN: ANTREAN MENUMPUK ⚠️', 0xdc2626);
+      if (dcNodes.fogB) {
+        dcNodes.fogB.ledMesh.material.color.setHex(0xdc2626);
+        dcNodes.fogB.light.color.setHex(0xdc2626);
+      }
+    } else if (actionName === 'markov_scan_start') {
+      clearTasks();
+      aoaExploreDrones.forEach(d => d.group.visible = false);
+      aoaExploitDrones.forEach(d => d.group.visible = false);
+      if (goldenBeam) goldenBeam.visible = false;
+      if (markovDome) markovDome.visible = false;
+      if (markovRing) markovRing.visible = true;
+      setBillboardStatus('fogA', 'MARKOV SCAN: P_ij = 0.18 (≤ MIN)', 0x06b6d4);
+      setBillboardStatus('fogB', 'MARKOV SCAN: P_ij = 0.89 (≥ MAX)', 0xf59e0b);
+      setBillboardStatus('cloud', 'MARKOV SCAN: P_ij = 0.42 (NORMAL)', 0x7c3aed);
+      spawnTaskBatch(brokerPos, ['fogB', 'fogB', 'fogB', 'fogB', 'fogB'], true);
+    } else if (actionName === 'markov_block_overload') {
+      if (markovDome) markovDome.visible = true;
+      if (markovRing) markovRing.visible = true;
+      setBillboardStatus('fogB', 'V3 = OVERLOADED 🔴 (BLOKIR TUGAS BARU)', 0xdc2626);
+      setBillboardStatus('fogA', 'V2 = LOW-LOAD 🟢 (SIAP TERIMA MIGRASI)', 0x10b981);
+    } else if (actionName === 'markov_migrate_tasks') {
+      // Animasikan migrasi tugas langsung dari Fog Cluster B ke Fog Cluster A!
+      setBillboardStatus('fogB', 'MIGRASI KE FOG A → KEMBALI NORMAL ✓', 0x10b981);
+      setBillboardStatus('fogA', 'MENERIMA TUGAS MIGRASI (STABIL 62%)', 0x0284c7);
+      if (dcNodes.fogB) {
+        dcNodes.fogB.ledMesh.material.color.setHex(0x10b981);
+        dcNodes.fogB.light.color.setHex(0x10b981);
+      }
+      spawnTaskBatch(fogBTop, ['fogA', 'fogA', 'fogA', 'fogA']);
+    } else if (actionName === 'aoa_explore_init') {
+      clearTasks();
+      if (markovDome) markovDome.visible = true;
+      if (markovRing) markovRing.visible = false;
+      if (goldenBeam) goldenBeam.visible = false;
+      aoaExploreDrones.forEach(d => d.group.visible = true);
+      aoaExploitDrones.forEach(d => d.group.visible = false);
+      setBillboardStatus('fogA', 'KANDIDAT AOA: VM 1..8 (VALID)', 0x0284c7);
+      setBillboardStatus('fogB', 'DIJAGA MARKOV (KAPASITAS AMAN)', 0x10b981);
+      setBillboardStatus('cloud', 'KANDIDAT AOA: VM 16..55 (VALID)', 0x7c3aed);
+    } else if (actionName === 'aoa_explore_flights') {
+      setBillboardStatus('fogA', 'EKSPLORASI (÷, ×): UJI KOMBINASI', 0x0284c7);
+      setBillboardStatus('cloud', 'EKSPLORASI (÷, ×): UJI NON-RT', 0x7c3aed);
+      spawnTaskBatch(brokerPos, ['fogA', 'cloud', 'fogA', 'cloud', 'fogB', 'fogA', 'cloud']);
+    } else if (actionName === 'aoa_explore_eval') {
+      setBillboardStatus('fogA', 'FITNESS TERBAIK SEMENTARA: best(x)', 0xf59e0b);
+      setBillboardStatus('cloud', 'DELAY & ENERGI: F = α·D + (1-α)·E', 0x7c3aed);
+    } else if (actionName === 'aoa_exploit_focus') {
+      clearTasks();
+      aoaExploreDrones.forEach(d => d.group.visible = false);
+      aoaExploitDrones.forEach(d => d.group.visible = true);
+      if (markovDome) markovDome.visible = true;
+      if (goldenBeam) goldenBeam.visible = true;
+      setBillboardStatus('fogA', 'EKSPLOITASI (−, +): FINE-TUNING best(x)', 0x10b981);
+      setBillboardStatus('fogB', 'BEBAN TERKENDALI (NORMAL)', 0x10b981);
+      setBillboardStatus('cloud', 'EKSPLOITASI (−, +): OPTIMASI CLOUD', 0x7c3aed);
+    } else if (actionName === 'aoa_exploit_dispatch') {
+      spawnTaskBatch(brokerPos, [
+        'fogA', 'cloud', 'fogA', 'cloud', 'fogB',
+        'fogA', 'cloud', 'fogA', 'cloud', 'fogB',
+        'fogA', 'cloud'
+      ]);
+    } else if (actionName === 'aoa_exploit_finish') {
+      setBillboardStatus('fogA', 'SEIMBANG 68% • MAKESPAN -8,29% ✓', 0x10b981);
+      setBillboardStatus('fogB', 'SEIMBANG 65% • 0 OVERLOAD ✓', 0x10b981);
+      setBillboardStatus('cloud', 'SEIMBANG 66% • DELAY -11,72% ✓', 0x10b981);
+    }
+  }
+
+  function applySubStep() {
+    const list = CHAPTER_SCRIPTS[currentMode] || CHAPTER_SCRIPTS['topology'];
+    const item = list[subStepIdx] || list[0];
+
+    const titleEl = document.getElementById('embeddedStageTitle');
+    if (titleEl) titleEl.innerText = item.stepLabel;
+
+    const narrEl = document.getElementById('stageChapterNarration');
+    if (narrEl) narrEl.innerText = item.narration;
+
+    const dotsEl = document.getElementById('stageSubStepDots');
+    if (dotsEl) {
+      dotsEl.innerHTML = list.map((_, i) =>
+        `<span style="display:inline-block;width:${i === subStepIdx ? '18px' : '7px'};height:7px;border-radius:999px;background:${i === subStepIdx ? '#38bdf8' : 'rgba(255,255,255,0.35)'};transition:all 0.25s;"></span>`
+      ).join('');
+    }
+
+    if (dcControls && dcCamera && item.camPos && item.camTarget) {
+      dcCamera.position.set(...item.camPos);
+      dcControls.target.set(...item.camTarget);
+    }
+
+    executeChapterAction(item.action);
+  }
+
+  function startChapterLoop() {
+    if (chapterTimer) clearInterval(chapterTimer);
+    applySubStep();
+
+    chapterTimer = setInterval(() => {
+      const list = CHAPTER_SCRIPTS[currentMode] || CHAPTER_SCRIPTS['topology'];
+      if (subStepIdx < list.length - 1) {
+        subStepIdx++;
+        applySubStep();
+      } else if (autoCycleAll) {
+        const nextModeIdx = (MODE_ORDER.indexOf(currentMode) + 1) % MODE_ORDER.length;
+        setMode(MODE_ORDER[nextModeIdx], true);
+      } else {
+        subStepIdx = 0;
+        applySubStep();
+      }
+    }, 4200);
   }
 
   function init(container) {
@@ -479,7 +753,7 @@ window.HMCDSStage3D = (function () {
 
     containerEl.innerHTML = '';
     const width = containerEl.clientWidth || 800;
-    const height = containerEl.clientHeight || 310;
+    const height = containerEl.clientHeight || 340;
 
     dcScene = new THREE.Scene();
     dcScene.background = new THREE.Color(0xfbf8f2);
@@ -527,23 +801,19 @@ window.HMCDSStage3D = (function () {
     gridHelper.position.y = 0.02;
     dcScene.add(gridHelper);
 
-    // 3 Cluster Utama Fog-Cloud HMCDS
     buildDatacenterTower('fogA', 'FOG CLUSTER A (VM 1..8)', 'Low-Load (V2) • 1.500-2.800 MIPS', [-11, 0, -2], 7.4, 0x0284c7, 0x38bdf8);
     buildDatacenterTower('cloud', 'CLOUD DATACENTER (40 VM)', 'Non-Real-Time • 3.000-5.000 MIPS', [11, 0, -2], 9.2, 0x7c3aed, 0xa855f7);
     buildDatacenterTower('fogB', 'FOG CLUSTER B (VM 9..15)', 'Edge Node • 100-800 MIPS', [0, 0, 7.5], 4.8, 0x059669, 0x10b981);
 
-    // Fiber Trunks
     buildNetworkTrunk('fogA_cloud', [-11, 0.6, -2], [11, 0.6, -2], 0x0284c7);
     buildNetworkTrunk('fogA_fogB', [-11, 0.6, -2], [0, 0.6, 7.5], 0x06b6d4);
     buildNetworkTrunk('cloud_fogB', [11, 0.6, -2], [0, 0.6, 7.5], 0x7c3aed);
 
-    // Elevated CF_Manager Broker
     buildDispatcherPlatform([0, 9.5, -12]);
     buildNetworkTrunk('disp_fogA', [0, 9.5, -12], [-11, 4.5, -2], 0x38bdf8);
     buildNetworkTrunk('disp_cloud', [0, 9.5, -12], [11, 5.2, -2], 0xa855f7);
     buildNetworkTrunk('disp_fogB', [0, 9.5, -12], [0, 2.8, 7.5], 0x10b981);
 
-    // Golden Crown & Beam atop Fog Cluster A (Best Real-Time Target)
     goldenCrown = new THREE.Mesh(
       new THREE.OctahedronGeometry(0.72, 0),
       new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xf59e0b, emissiveIntensity: 0.95, roughness: 0.2 })
@@ -561,17 +831,23 @@ window.HMCDSStage3D = (function () {
 
     createAOADronesAndMarkovShield();
     start();
+    setMode('topology');
   }
 
   function start() {
     if (isLoopActive) return;
     isLoopActive = true;
     animate();
+    startChapterLoop();
   }
 
   function stop() {
     isLoopActive = false;
     if (animFrameId) cancelAnimationFrame(animFrameId);
+    if (chapterTimer) {
+      clearInterval(chapterTimer);
+      chapterTimer = null;
+    }
   }
 
   function animate() {
@@ -629,21 +905,6 @@ window.HMCDSStage3D = (function () {
         t.mesh.rotation.set(0, Math.random() * Math.PI, 0);
         landedTasks.push(t.mesh);
         activeFlyingTasks.splice(i, 1);
-
-        const node = dcNodes[t.targetId];
-        if (node) {
-          if (t.targetId === 'fogB' && t.algo === 'woa') {
-            setBillboardStatus('fogB', 'STATUS: OVERLOADED (V3 = O) ⚠️', 0xdc2626);
-            node.ledMesh.material.color.setHex(0xdc2626);
-            node.light.color.setHex(0xdc2626);
-          } else if (t.targetId === 'fogB' && t.algo === 'hmcds') {
-            setBillboardStatus('fogB', 'MARKOV: TERKENDALI (V1 = NORMAL)', 0x10b981);
-          } else if (t.targetId === 'fogA') {
-            setBillboardStatus('fogA', 'MARKOV+AOA: OPTIMAL (LOW-LOAD)', 0x0284c7);
-          } else {
-            setBillboardStatus('cloud', 'AOA: NON-RT SEIMBANG (66%)', 0x7c3aed);
-          }
-        }
       } else {
         const u = t.progress;
         const p0 = t.startP;
@@ -686,145 +947,13 @@ window.HMCDSStage3D = (function () {
       node.landedCount = 0;
       node.ledMesh.material.color.setHex(node.baseLedColor);
       node.light.color.setHex(node.baseLedColor);
-      setBillboardStatus(node.id, 'STATUS: SIAP ALOKASI', node.baseLedColor);
-    });
-
-    if (goldenBeam) goldenBeam.visible = false;
-  }
-
-  function runSimulation(algo = 'hmcds') {
-    clearTasks();
-
-    const startP = new THREE.Vector3(0, 9.5, -12);
-    let assignedTargets = [];
-
-    if (algo === 'woa') {
-      // Tanpa Markov & AOA: 12 tugas menumpuk di Fog B (100-800 MIPS) hingga Overload!
-      for (let i = 0; i < 12; i++) assignedTargets.push('fogB');
-      for (let i = 0; i < 5; i++) assignedTargets.push('fogA');
-      for (let i = 0; i < 3; i++) assignedTargets.push('cloud');
-      assignedTargets = assignedTargets.sort(() => Math.random() - 0.5);
-
-      aoaExploreDrones.forEach(d => d.group.visible = false);
-      aoaExploitDrones.forEach(d => d.group.visible = false);
-      if (goldenBeam) goldenBeam.visible = false;
-      if (markovDome) markovDome.visible = false;
-      if (markovRing) markovRing.visible = false;
-    } else if (algo === 'aoa') {
-      // AOA Saja tanpa prediksi Markov: cukup baik tapi Fog B masih agak padat
-      for (let i = 0; i < 8; i++) assignedTargets.push('fogA');
-      for (let i = 0; i < 6; i++) assignedTargets.push('cloud');
-      for (let i = 0; i < 6; i++) assignedTargets.push('fogB');
-
-      aoaExploreDrones.forEach(d => d.group.visible = true);
-      aoaExploitDrones.forEach(d => d.group.visible = true);
-      if (goldenBeam) goldenBeam.visible = true;
-      if (markovDome) markovDome.visible = false;
-      if (markovRing) markovRing.visible = false;
-    } else {
-      // HYBRID HMCDS (Markov Chain + AOA):
-      // Markov memprediksi Fog B akan penuh -> blokir kelebihan & migrasikan ke Fog A (Low-Load),
-      // sedangkan AOA memetakan Non-Real-Time berat ke Cloud DC!
-      for (let i = 0; i < 9; i++) assignedTargets.push('fogA');
-      for (let i = 0; i < 8; i++) assignedTargets.push('cloud');
-      for (let i = 0; i < 3; i++) assignedTargets.push('fogB');
-
-      aoaExploreDrones.forEach(d => d.group.visible = true);
-      aoaExploitDrones.forEach(d => d.group.visible = true);
-      if (goldenBeam) goldenBeam.visible = true;
-      if (markovDome) markovDome.visible = true;
-      if (markovRing) markovRing.visible = true;
-    }
-
-    assignedTargets.forEach((targetId, idx) => {
-      const destNode = dcNodes[targetId];
-      const isHeavy = targetId === 'cloud' || (algo === 'woa' && idx % 2 === 0);
-      const cubeSize = isHeavy ? 1.1 : (targetId === 'fogA' ? 0.85 : 0.65);
-      const cubeColor = targetId === 'cloud' ? 0x7c3aed : (targetId === 'fogA' ? 0x0284c7 : 0x059669);
-
-      const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize),
-        new THREE.MeshStandardMaterial({
-          color: cubeColor,
-          emissive: cubeColor,
-          emissiveIntensity: 0.55,
-          roughness: 0.3
-        })
-      );
-      mesh.position.copy(startP);
-      mesh.castShadow = true;
-      dcScene.add(mesh);
-
-      const landOffset = calculateLandingSlot(targetId, algo);
-      const endP = new THREE.Vector3(
-        destNode.pos.x + landOffset.x,
-        destNode.pos.y + landOffset.y,
-        destNode.pos.z + landOffset.z
-      );
-
-      const midX = (startP.x + endP.x) / 2;
-      const midZ = (startP.z + endP.z) / 2;
-      const midY = Math.max(startP.y, endP.y) + 3.5 + Math.random() * 2.0;
-      const ctrlP = new THREE.Vector3(midX, midY, midZ);
-
-      activeFlyingTasks.push({
-        mesh,
-        targetId,
-        algo,
-        startP,
-        ctrlP,
-        endP,
-        progress: -(idx * 0.05),
-        speed: 0.019 + Math.random() * 0.004
-      });
     });
   }
 
-  function setMode(mode) {
+  function setMode(mode, keepAutoCycle = false) {
+    if (!keepAutoCycle) autoCycleAll = false;
     currentMode = mode;
-    const titleEl = document.getElementById('embeddedStageTitle');
-
-    if (mode === 'topology') {
-      if (titleEl) titleEl.innerText = '🌐 Panggung 3D: Topologi 3-Lapis Fog–Cloud & CF_Manager';
-      aoaExploreDrones.forEach(d => d.group.visible = true);
-      aoaExploitDrones.forEach(d => d.group.visible = true);
-      if (markovDome) markovDome.visible = true;
-      if (markovRing) markovRing.visible = true;
-      if (dcControls) {
-        dcControls.target.set(0, 3.8, 0);
-        dcCamera.position.set(0, 24, 34);
-      }
-    } else if (mode === 'markov') {
-      if (titleEl) titleEl.innerText = '🔮 Tahap 1 — Markov Chain (P_ij): Prediksi Overload & Migrasi ke Low-Load';
-      aoaExploreDrones.forEach(d => d.group.visible = false);
-      aoaExploitDrones.forEach(d => d.group.visible = false);
-      if (markovDome) markovDome.visible = true;
-      if (markovRing) markovRing.visible = true;
-      setBillboardStatus('fogB', 'MARKOV: P_ij ≥ MAX (CEGAH OVERLOAD)', 0x06b6d4);
-      setBillboardStatus('fogA', 'MARKOV: P_ij ≤ MIN (TERIMA MIGRASI)', 0x10b981);
-      if (dcControls) {
-        dcControls.target.set(-4, 3.5, 3);
-        dcCamera.position.set(-4, 17, 24);
-      }
-      runSimulation('hmcds');
-    } else if (mode === 'aoa-explore') {
-      if (titleEl) titleEl.innerText = '🔍 Tahap 2a — Eksplorasi AOA (r₁ > MOA): Drone Pembagian (÷) & Perkalian (×)';
-      aoaExploreDrones.forEach(d => d.group.visible = true);
-      aoaExploitDrones.forEach(d => d.group.visible = false);
-      if (dcControls) {
-        dcControls.target.set(0, 7, 0);
-        dcCamera.position.set(0, 21, 29);
-      }
-    } else if (mode === 'aoa-exploit') {
-      if (titleEl) titleEl.innerText = '🎯 Tahap 2b — Eksploitasi AOA (r₁ ≤ MOA): Drone (−, +) & Jadwal Terbaik best(x)';
-      aoaExploreDrones.forEach(d => d.group.visible = false);
-      aoaExploitDrones.forEach(d => d.group.visible = true);
-      if (goldenBeam) goldenBeam.visible = true;
-      if (dcControls) {
-        dcControls.target.set(-11, 5.5, -2);
-        dcCamera.position.set(-11, 16, 15);
-      }
-    }
+    subStepIdx = 0;
 
     ['btnModeEmbeddedTopo', 'btnModeEmbeddedMarkov', 'btnModeEmbeddedExplore', 'btnModeEmbeddedExploit'].forEach(btnId => {
       const b = document.getElementById(btnId);
@@ -834,6 +963,26 @@ window.HMCDSStage3D = (function () {
     if (mode === 'markov') document.getElementById('btnModeEmbeddedMarkov')?.classList.add('active');
     if (mode === 'aoa-explore') document.getElementById('btnModeEmbeddedExplore')?.classList.add('active');
     if (mode === 'aoa-exploit') document.getElementById('btnModeEmbeddedExploit')?.classList.add('active');
+
+    const autoBtn = document.getElementById('btnModeAutoAll');
+    if (autoBtn) {
+      autoBtn.classList.toggle('active', autoCycleAll);
+      autoBtn.innerText = autoCycleAll ? '⏸ Auto-Semua Babak' : '▶ Auto-Semua Babak';
+    }
+
+    startChapterLoop();
+  }
+
+  function toggleAutoAll() {
+    autoCycleAll = !autoCycleAll;
+    const autoBtn = document.getElementById('btnModeAutoAll');
+    if (autoBtn) {
+      autoBtn.classList.toggle('active', autoCycleAll);
+      autoBtn.innerText = autoCycleAll ? '⏸ Auto-Semua Babak' : '▶ Auto-Semua Babak';
+    }
+    if (autoCycleAll) {
+      setMode('topology', true);
+    }
   }
 
   return {
@@ -841,8 +990,8 @@ window.HMCDSStage3D = (function () {
     start,
     stop,
     resize,
-    runSimulation,
     clearTasks,
-    setMode
+    setMode,
+    toggleAutoAll
   };
 })();

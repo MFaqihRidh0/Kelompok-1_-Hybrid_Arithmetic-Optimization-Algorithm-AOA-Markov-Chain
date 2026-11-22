@@ -77,15 +77,16 @@ function openSlideWindow(slideIdx) {
 
   if (typeof HMCDSStage3D !== 'undefined') {
     const stageCanvas = document.getElementById('embeddedThreeCanvas');
-    if (stageCanvas) {
+    if (slideIdx === 4 && stageCanvas) {
       HMCDSStage3D.init(stageCanvas);
       HMCDSStage3D.start();
       setTimeout(() => HMCDSStage3D.resize(), 60);
       setTimeout(() => HMCDSStage3D.resize(), 200);
+    } else {
+      HMCDSStage3D.stop();
     }
   }
 
-  updateHMCDSimulatorUI();
   if (typeof HMCDS_Stepper !== 'undefined') {
     HMCDS_Stepper.render();
   }
@@ -176,12 +177,19 @@ function closeCreditsModal() {
 }
 
 // ============================================================================
-// EMBEDDED 3D TOPOLOGY STAGE & LIVE HMCDS SIMULATOR CONSOLE
+// EMBEDDED 3D TOPOLOGY STAGE (PER-BABAK CONTROLLER)
 // ============================================================================
 function setEmbedded3DMode(mode) {
   if (typeof CloudAudio !== 'undefined' && CloudAudio.playClick) CloudAudio.playClick();
   if (typeof HMCDSStage3D !== 'undefined') {
     HMCDSStage3D.setMode(mode);
+  }
+}
+
+function toggleEmbedded3DAutoAll() {
+  if (typeof CloudAudio !== 'undefined' && CloudAudio.playClick) CloudAudio.playClick();
+  if (typeof HMCDSStage3D !== 'undefined' && HMCDSStage3D.toggleAutoAll) {
+    HMCDSStage3D.toggleAutoAll();
   }
 }
 
