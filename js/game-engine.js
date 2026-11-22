@@ -42,6 +42,7 @@ const spinningFans = [];
 const iotBeacons = [];
 const ambientDataOrbs = [];
 const driftingClouds = [];
+const cableDataPulses = [];
 let sunsetSunGroup = null;
 
 let stabilizedCount = 0;
@@ -448,6 +449,7 @@ function buildThreeLayerWorld() {
   const frontGlassMat = new THREE.MeshBasicMaterial({ map: fogRackTex });
 
   let placedFogVMs = 0;
+  const fogVmPositions = [];
   for (let i = 0; i < 24 && placedFogVMs < 15; i++) {
     const angle = (i / 24) * Math.PI * 2;
     const rx = -9 + Math.cos(angle) * 19.0;
@@ -463,6 +465,7 @@ function buildThreeLayerWorld() {
     }
     if (tooCloseToRoad) continue;
     placedFogVMs++;
+    fogVmPositions.push(new THREE.Vector3(rx, 2.97, rz));
 
     const h = 2.1 + (placedFogVMs % 3) * 0.55;
     const rackGroup = new THREE.Group();
@@ -503,6 +506,46 @@ function buildThreeLayerWorld() {
     spinningFans.push(fanProp);
 
     scene.add(rackGroup);
+  }
+
+  // Kabel Data Biru di Lantai Bawah yang Menghubungkan Server Berdekatan + Animasi Cahaya Data Mengalir
+  const cableMat = new THREE.MeshStandardMaterial({
+    color: 0x0284c7,
+    emissive: 0x0ea5e9,
+    emissiveIntensity: 0.55,
+    roughness: 0.3
+  });
+  const pulseMat = new THREE.MeshBasicMaterial({ color: 0x7dd3fc });
+
+  for (let i = 0; i < fogVmPositions.length; i++) {
+    for (let j = i + 1; j < fogVmPositions.length; j++) {
+      const pA = fogVmPositions[i];
+      const pB = fogVmPositions[j];
+      const dist = pA.distanceTo(pB);
+      if (dist < 10.5) {
+        const mid = pA.clone().lerp(pB, 0.5);
+        mid.y = 3.04;
+        const cCurve = new THREE.CatmullRomCurve3([
+          new THREE.Vector3(pA.x, 3.04, pA.z),
+          mid,
+          new THREE.Vector3(pB.x, 3.04, pB.z)
+        ]);
+        const cableMesh = new THREE.Mesh(new THREE.TubeGeometry(cCurve, 16, 0.075, 6, false), cableMat);
+        scene.add(cableMesh);
+
+        // 2 cahaya data mengalir bolak-balik di sepanjang kabel lantai
+        for (let k = 0; k < 2; k++) {
+          const pulse = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 8), pulseMat);
+          scene.add(pulse);
+          cableDataPulses.push({
+            mesh: pulse,
+            curve: cCurve,
+            t: k * 0.5,
+            speed: 0.35 + (i % 3) * 0.08
+          });
+        }
+      }
+    }
   }
 
   // ========================================================================
@@ -724,7 +767,6 @@ function buildAutoWalkBeacon() {
 
 function buildAllClusterStations() {
   const labelsContainer = document.getElementById('worldLabelsContainer');
-  const rackTex = createServerRackTexture('#ef4444');
 
   CLUSTER_STATIONS.forEach((st, idx) => {
     const group = new THREE.Group();
@@ -736,50 +778,64 @@ function buildAllClusterStations() {
       emissive: 0xdc2626,
       emissiveIntensity: 0.85
     });
-    const padRing = new THREE.Mesh(new THREE.RingGeometry(1.85, 2.35, 6), padMat);
+    const padRing = new THREE.Mesh(new THREE.RingGeometry(1.9, 2.4, 6), padMat);
     padRing.rotation.x = -Math.PI / 2;
     padRing.position.y = 0.09;
     group.add(padRing);
 
-    // Server Cluster Pillar
+    // Pos Cloud Node (seukuran awan langit, bentuk awan bertumpuk khas Pos — awalnya MENDUNG gelap)
     const coreMat = new THREE.MeshStandardMaterial({
-      map: rackTex,
-      emissive: 0xef4444,
-      emissiveIntensity: 0.4,
-      metalness: 0.55,
-      roughness: 0.35
+      color: 0x334155,
+      emissive: 0x1e293b,
+      emissiveIntensity: 0.45,
+      roughness: 0.88
     });
-    const coreMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 1.05, 2.5, 8), coreMat);
-    coreMesh.position.y = 1.3;
-    coreMesh.castShadow = true;
-    group.add(coreMesh);
+    const cloudBodyGroup = new THREE.Group();
+    cloudBodyGroup.position.y = 2.05;
+    const posCloudPuffs = [
+      [-1.35, -0.15, 0.15, 1.15],
+      [1.35, -0.15, -0.15, 1.15],
+      [0, 0.35, 0, 1.55],
+      [0, -0.25, 1.05, 1.0],
+      [0, -0.25, -1.05, 1.0],
+      [-0.65, 0.55, 0.4, 0.95],
+      [0.65, 0.55, -0.4, 0.95]
+    ];
+    posCloudPuffs.forEach(([px, py, pz, r]) => {
+      const puff = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 14), coreMat);
+      puff.position.set(px, py, pz);
+      puff.scale.set(1.15, 0.82, 1.0);
+      puff.castShadow = true;
+      cloudBodyGroup.add(puff);
+    });
+    group.add(cloudBodyGroup);
 
-    // Floating Status Crystal above Server
+    // Floating Status Crystal above Pos Cloud
     const crystalMat = new THREE.MeshStandardMaterial({
       color: 0xf87171, emissive: 0xef4444, emissiveIntensity: 0.9, roughness: 0.2
     });
-    const crystalMesh = new THREE.Mesh(new THREE.OctahedronGeometry(0.45, 0), crystalMat);
-    crystalMesh.position.y = 3.25;
+    const crystalMesh = new THREE.Mesh(new THREE.OctahedronGeometry(0.42, 0), crystalMat);
+    crystalMesh.position.y = 3.95;
     group.add(crystalMesh);
 
     // Vertical Holographic Beacon Beam
     const beaconMat = new THREE.MeshBasicMaterial({
-      color: 0xef4444, transparent: true, opacity: 0.18, side: THREE.DoubleSide
+      color: 0xef4444, transparent: true, opacity: 0.15, side: THREE.DoubleSide
     });
-    const beaconMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.72, 5.2, 12, 1, true), beaconMat);
-    beaconMesh.position.y = 3.0;
+    const beaconMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.72, 4.8, 12, 1, true), beaconMat);
+    beaconMesh.position.y = 2.6;
     group.add(beaconMesh);
 
-    // Dual Counter-Rotating Orbital Rings
+    // Dual Counter-Rotating Orbital Rings around Cloud
     const haloMat = new THREE.MeshBasicMaterial({ color: 0xf87171 });
-    const haloMesh = new THREE.Mesh(new THREE.TorusGeometry(1.38, 0.06, 8, 28), haloMat);
-    haloMesh.position.y = 2.4;
-    haloMesh.rotation.x = Math.PI / 2.4;
+    const haloMesh = new THREE.Mesh(new THREE.TorusGeometry(2.15, 0.06, 8, 32), haloMat);
+    haloMesh.position.y = 2.05;
+    haloMesh.rotation.x = Math.PI / 2.2;
     group.add(haloMesh);
 
-    const halo2Mesh = new THREE.Mesh(new THREE.TorusGeometry(1.18, 0.05, 8, 28), haloMat);
-    halo2Mesh.position.y = 2.4;
-    halo2Mesh.rotation.x = -Math.PI / 2.4;
+    const halo2Mesh = new THREE.Mesh(new THREE.TorusGeometry(1.9, 0.05, 8, 32), haloMat);
+    halo2Mesh.position.y = 2.05;
+    halo2Mesh.rotation.x = -Math.PI / 2.2;
     group.add(halo2Mesh);
 
     scene.add(group);
@@ -791,7 +847,7 @@ function buildAllClusterStations() {
     labelEl.innerHTML = `
       <div class="enemy-pos-tag">${st.icon} POS ${st.posNum}</div>
       <div class="enemy-hp-track"><div class="enemy-hp-fill" id="clusterHpFill_${idx}"></div></div>
-      <div class="enemy-attack-hint" id="clusterHint_${idx}">OVERLOADED 🔴 • [J] Markov + [K] AOA</div>
+      <div class="enemy-attack-hint" id="clusterHint_${idx}">AWAN MENDUNG 🔴 • [J] Markov / [K] AOA</div>
     `;
     labelEl.addEventListener('click', () => {
       if (clusterObjects[idx].stabilized) {
@@ -803,6 +859,7 @@ function buildAllClusterStations() {
     clusterObjects.push({
       station: st,
       group,
+      cloudBodyGroup,
       padMat,
       coreMat,
       crystalMesh,
@@ -934,6 +991,11 @@ function castHMCDSAction(type) {
   target.instability = Math.max(0, target.instability - amount);
   target.wobble = 0.45;
 
+  // Begitu diklik J atau K, awan mendung langsung berubah menjadi PUTIH cerah!
+  target.coreMat.color.setHex(0xffffff);
+  target.coreMat.emissive.setHex(0xe0f2fe);
+  target.coreMat.emissiveIntensity = 0.35;
+
   const idx = target.station.id;
   const hpFill = document.getElementById(`clusterHpFill_${idx}`);
   if (hpFill) hpFill.style.width = `${target.instability}%`;
@@ -945,7 +1007,9 @@ function castHMCDSAction(type) {
 
     target.padMat.color.setHex(0x10b981);
     target.padMat.emissive.setHex(0x059669);
-    target.coreMat.emissive.setHex(0x10b981);
+    target.coreMat.color.setHex(0xffffff);
+    target.coreMat.emissive.setHex(0xbae6fd);
+    target.coreMat.emissiveIntensity = 0.45;
     target.crystalMat.color.setHex(0x34d399);
     target.crystalMat.emissive.setHex(0x10b981);
     target.beaconMat.color.setHex(0x10b981);
@@ -1285,6 +1349,10 @@ function gameLoop() {
     c.group.position.x += c.speed * dt;
     if (c.group.position.x > 95) c.group.position.x = -95;
   });
+  cableDataPulses.forEach(p => {
+    p.t = (p.t + dt * p.speed) % 1;
+    p.mesh.position.copy(p.curve.getPointAt(p.t));
+  });
   iotBeacons.forEach(b => {
     const s = 0.85 + Math.sin(hoverTime * 4 + b.phase) * 0.3;
     b.mesh.scale.set(s, s, s);
@@ -1301,7 +1369,10 @@ function gameLoop() {
     if (cl.halo2Mesh) cl.halo2Mesh.rotation.z -= dt * (cl.stabilized ? 0.6 : 2.4);
     if (cl.crystalMesh) {
       cl.crystalMesh.rotation.y += dt * 2.2;
-      cl.crystalMesh.position.y = 3.25 + Math.sin(hoverTime * 3 + cl.station.id) * 0.18;
+      cl.crystalMesh.position.y = 3.95 + Math.sin(hoverTime * 3 + cl.station.id) * 0.18;
+    }
+    if (cl.cloudBodyGroup) {
+      cl.cloudBodyGroup.position.y = 2.05 + Math.sin(hoverTime * 2.2 + cl.station.id) * 0.12;
     }
     if (cl.wobble > 0) {
       cl.wobble = Math.max(0, cl.wobble - dt * 1.6);
