@@ -1,5 +1,5 @@
 // ============================================================================
-// HMCDS FOG-CLOUD CYBER-DISPATCHER — 3D THREE.JS ENGINE (3-LAYER WORLD)
+// HMCDS FOG-CLOUD CYBER-DISPATCHER — 3D THREE.JS ENGINE (360° ORBIT & 3-LAYER)
 // ============================================================================
 
 let scene, camera, renderer, clock;
@@ -12,10 +12,11 @@ let hoverTime = 0;
 let roadCurve = null;
 let roadSamplePoints = [];
 let autoWalkTarget = null;
+let autoWalkCurveTargetT = null;
 let autoWalkBeacon = null;
 const keysPressed = {};
 
-// 360-Degree Damped Spherical Orbit Camera
+// 360-Degree Damped Spherical Orbit Camera State
 let cameraYaw = 0;
 let targetCameraYaw = 0;
 let cameraPitch = 0.36;
@@ -26,6 +27,8 @@ let smoothFocusPos = new THREE.Vector3(0, 1.8, 14);
 
 let isDraggingCamera = false;
 let lastMousePos = { x: 0, y: 0 };
+let lastTouchPos = null;
+let lastPinchDist = null;
 let totalDragDist = 0;
 
 let hemiLight, dirLight, introSpotLight;
@@ -34,6 +37,7 @@ const activeWaves = [];
 const activeBeams = [];
 const activeParticles = [];
 const activeDataPackets = [];
+const activeDomes = [];
 const spinningFans = [];
 const iotBeacons = [];
 const ambientDataOrbs = [];
@@ -43,10 +47,10 @@ let stabilizedCount = 0;
 function initGameEngine() {
   const container = document.getElementById('gameCanvasContainer');
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0b0a1a);
-  scene.fog = new THREE.FogExp2(0x0b0a1a, 0.0065);
+  scene.background = new THREE.Color(0x090818);
+  scene.fog = new THREE.FogExp2(0x090818, 0.0055);
 
-  camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 350);
+  camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 360);
   camera.position.set(0, 9.5, 25.0);
 
   renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -70,10 +74,10 @@ function initGameEngine() {
 }
 
 function setupLighting() {
-  hemiLight = new THREE.HemisphereLight(0xe0f2fe, 0x1e1b4b, 0.6);
+  hemiLight = new THREE.HemisphereLight(0xe0f2fe, 0x1e1b4b, 0.65);
   scene.add(hemiLight);
 
-  dirLight = new THREE.DirectionalLight(0xfef3c7, 0.9);
+  dirLight = new THREE.DirectionalLight(0xfef3c7, 0.95);
   dirLight.position.set(35, 65, 30);
   dirLight.castShadow = true;
   dirLight.shadow.mapSize.width = 2048;
@@ -92,7 +96,7 @@ function setupLighting() {
   scene.add(introSpotLight.target);
 }
 
-function createGridTexture(bgHex, lineHex) {
+function createGridTexture(bgHex, lineHex, repeatX = 36, repeatY = 36) {
   const canvas = document.createElement('canvas');
   canvas.width = 256;
   canvas.height = 256;
@@ -111,7 +115,44 @@ function createGridTexture(bgHex, lineHex) {
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = THREE.RepeatWrapping;
   tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(36, 36);
+  tex.repeat.set(repeatX, repeatY);
+  return tex;
+}
+
+function createCyberRoadTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+
+  // Dark cyber asphalt
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, 256, 256);
+
+  // Subtle grid lines
+  ctx.strokeStyle = 'rgba(56, 189, 248, 0.14)';
+  ctx.lineWidth = 2;
+  for (let y = 0; y < 256; y += 32) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(256, y);
+    ctx.stroke();
+  }
+
+  // Glowing side lanes
+  ctx.fillStyle = '#06b6d4';
+  ctx.fillRect(6, 0, 10, 256);
+  ctx.fillRect(240, 0, 10, 256);
+
+  // Center dashed line
+  ctx.fillStyle = '#bae6fd';
+  ctx.fillRect(123, 20, 10, 90);
+  ctx.fillRect(123, 148, 10, 90);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(1, 24);
   return tex;
 }
 
@@ -144,55 +185,120 @@ function createServerRackTexture(accentHex = '#06b6d4') {
   return new THREE.CanvasTexture(canvas);
 }
 
+function buildSmoothCyberRoad(curve, width = 7.6, segments = 280) {
+  const vertices = [];
+  const uvs = [];
+  const indices = [];
+  const halfW = width / 2;
+  const leftPts = [];
+  const rightPts = [];
+
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments;
+    const pt = curve.getPointAt(t);
+    const tangent = curve.getTangentAt(t).normalize();
+    const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+    const leftPt = pt.clone().addScaledVector(normal, halfW);
+    const rightPt = pt.clone().addScaledVector(normal, -halfW);
+    leftPt.y = pt.y + 0.05;
+    rightPt.y = pt.y + 0.05;
+
+    vertices.push(leftPt.x, leftPt.y, leftPt.z);
+    vertices.push(rightPt.x, rightPt.y, rightPt.z);
+
+    if (i % 4 === 0 || i === segments) {
+      leftPts.push(leftPt.clone().add(new THREE.Vector3(0, 0.14, 0)));
+      rightPts.push(rightPt.clone().add(new THREE.Vector3(0, 0.14, 0)));
+    }
+
+    uvs.push(0, t * 24);
+    uvs.push(1, t * 24);
+  }
+
+  for (let i = 0; i < segments; i++) {
+    const a = i * 2;
+    const b = i * 2 + 1;
+    const c = (i + 1) * 2;
+    const d = (i + 1) * 2 + 1;
+    indices.push(a, b, c);
+    indices.push(b, d, c);
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+
+  const roadMesh = new THREE.Mesh(
+    geo,
+    new THREE.MeshStandardMaterial({
+      map: createCyberRoadTexture(),
+      roughness: 0.55,
+      metalness: 0.25,
+      side: THREE.DoubleSide
+    })
+  );
+  roadMesh.receiveShadow = true;
+  scene.add(roadMesh);
+
+  // Smooth glowing energy guardrails on both edges
+  const railMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+  [leftPts, rightPts].forEach(pts => {
+    const railCurve = new THREE.CatmullRomCurve3(pts);
+    const railGeo = new THREE.TubeGeometry(railCurve, 180, 0.12, 6, false);
+    scene.add(new THREE.Mesh(railGeo, railMat));
+  });
+}
+
 function buildThreeLayerWorld() {
   // ========================================================================
   // LAYER 1: IoT SENSOR VALLEY (y = 0)
   // ========================================================================
   const groundMat = new THREE.MeshStandardMaterial({
-    map: createGridTexture('#0f1024', 'rgba(6, 182, 212, 0.25)'),
+    map: createGridTexture('#0d0f22', 'rgba(6, 182, 212, 0.22)', 36, 36),
     roughness: 0.9
   });
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(240, 240), groundMat);
   ground.rotation.x = -Math.PI / 2;
-  ground.position.set(0, -0.05, -30);
+  ground.position.set(0, -0.06, -30);
   ground.receiveShadow = true;
   scene.add(ground);
 
   // Start Sanctuary Pad (0, 0, 14)
   const startPad = new THREE.Mesh(
-    new THREE.CylinderGeometry(4.3, 4.6, 0.2, 32),
+    new THREE.CylinderGeometry(4.3, 4.6, 0.16, 32),
     new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: 0x0284c7, emissiveIntensity: 0.35 })
   );
   startPad.position.set(0, 0.02, 14);
   scene.add(startPad);
 
   // IoT Sensor Towers scattered in Layer 1
-  const iotCoords = [
-    [-12, 10], [12, 10], [-14, 0], [12, -2], [-22, -10], [6, -12]
-  ];
+  const iotCoords = [[-11, 10], [11, 10], [-13, 0], [11, -2], [-18, -9], [5, -12]];
   iotCoords.forEach(([ix, iz], idx) => {
     const g = new THREE.Group();
     g.position.set(ix, 0, iz);
 
     const base = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.9, 1.2, 0.5, 8),
+      new THREE.CylinderGeometry(0.8, 1.1, 0.45, 8),
       new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.6, roughness: 0.4 })
     );
-    base.position.y = 0.25;
+    base.position.y = 0.22;
     g.add(base);
 
     const mast = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.12, 0.18, 3.4, 8),
+      new THREE.CylinderGeometry(0.1, 0.16, 3.2, 8),
       new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8 })
     );
-    mast.position.y = 2.1;
+    mast.position.y = 2.0;
     g.add(mast);
 
     const beacon = new THREE.Mesh(
-      new THREE.SphereGeometry(0.32, 12, 12),
+      new THREE.SphereGeometry(0.3, 12, 12),
       new THREE.MeshBasicMaterial({ color: 0x22d3ee })
     );
-    beacon.position.y = 3.9;
+    beacon.position.y = 3.7;
     g.add(beacon);
     iotBeacons.push({ mesh: beacon, phase: idx * 0.9 });
 
@@ -203,53 +309,58 @@ function buildThreeLayerWorld() {
   const gateGroup = new THREE.Group();
   gateGroup.position.set(-10, 0, -8);
   gateGroup.rotation.y = Math.PI / 5;
-  [-3.8, 3.8].forEach(px => {
+  [-4.4, 4.4].forEach(px => {
     const pillar = new THREE.Mesh(
-      new THREE.BoxGeometry(0.65, 5.2, 0.65),
+      new THREE.BoxGeometry(0.55, 5.2, 0.55),
       new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: 0x0284c7, emissiveIntensity: 0.45 })
     );
     pillar.position.set(px, 2.6, 0);
     gateGroup.add(pillar);
   });
   const archTop = new THREE.Mesh(
-    new THREE.BoxGeometry(8.4, 0.65, 0.8),
-    new THREE.MeshStandardMaterial({ color: 0x0ea5e9, emissive: 0x38bdf8, emissiveIntensity: 0.6 })
+    new THREE.BoxGeometry(9.4, 0.5, 0.7),
+    new THREE.MeshStandardMaterial({ color: 0x0ea5e9, emissive: 0x38bdf8, emissiveIntensity: 0.55 })
   );
   archTop.position.set(0, 5.3, 0);
   gateGroup.add(archTop);
   scene.add(gateGroup);
 
   // ========================================================================
-  // LAYER 2: FOG EDGE PLATEAU (y = 3.0) — 15 Fog VMs
+  // LAYER 2: FOG EDGE PLATEAU (y = 3.0) — Dark Cyber Grid + Glowing Edge Wireframe
   // ========================================================================
+  const fogGeo = new THREE.BoxGeometry(42, 0.5, 22);
   const fogPlatform = new THREE.Mesh(
-    new THREE.BoxGeometry(46, 0.55, 34),
-    new THREE.MeshStandardMaterial({ color: 0x132238, roughness: 0.65, metalness: 0.3 })
+    fogGeo,
+    new THREE.MeshStandardMaterial({
+      map: createGridTexture('#111b2e', 'rgba(34, 211, 238, 0.35)', 10, 6),
+      roughness: 0.7,
+      metalness: 0.25
+    })
   );
-  fogPlatform.position.set(-9, 2.68, -28);
+  fogPlatform.position.set(-9, 2.72, -29);
   fogPlatform.receiveShadow = true;
   scene.add(fogPlatform);
 
-  const fogRim = new THREE.Mesh(
-    new THREE.BoxGeometry(46.5, 0.14, 34.5),
-    new THREE.MeshBasicMaterial({ color: 0x06b6d4 })
+  const fogEdges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(fogGeo),
+    new THREE.LineBasicMaterial({ color: 0x22d3ee })
   );
-  fogRim.position.set(-9, 2.95, -28);
-  scene.add(fogRim);
+  fogEdges.position.copy(fogPlatform.position);
+  scene.add(fogEdges);
 
-  // 15 Fog VM Server Racks with blinking texture & cooling fan
+  // 15 Fog VM Server Racks around Fog Plateau
   const fogRackTex = createServerRackTexture('#22d3ee');
   for (let i = 0; i < 15; i++) {
     const angle = (i / 15) * Math.PI * 2;
-    const rx = -9 + Math.cos(angle) * 19.5;
-    const rz = -28 + Math.sin(angle) * 14;
-    const h = 2.0 + (i % 3) * 0.75;
+    const rx = -9 + Math.cos(angle) * 18.5;
+    const rz = -29 + Math.sin(angle) * 8.8;
+    const h = 2.0 + (i % 3) * 0.7;
 
     const rackGroup = new THREE.Group();
-    rackGroup.position.set(rx, 2.95, rz);
+    rackGroup.position.set(rx, 2.97, rz);
 
     const tower = new THREE.Mesh(
-      new THREE.BoxGeometry(1.35, h, 1.35),
+      new THREE.BoxGeometry(1.3, h, 1.3),
       new THREE.MeshStandardMaterial({ map: fogRackTex, roughness: 0.4, metalness: 0.5 })
     );
     tower.position.y = h / 2;
@@ -268,58 +379,60 @@ function buildThreeLayerWorld() {
   }
 
   // ========================================================================
-  // LAYER 3: CLOUD SKY CITADEL (y = 6.5) — 2 Giant Data Centers (40 Cloud VMs)
+  // LAYER 3: CLOUD SKY CITADEL (y = 6.5) — Dark Cyber Grid + Glowing Edge Wireframe
   // ========================================================================
+  const cloudGeo = new THREE.BoxGeometry(40, 0.6, 22);
   const cloudPlatform = new THREE.Mesh(
-    new THREE.BoxGeometry(44, 0.7, 32),
-    new THREE.MeshStandardMaterial({ color: 0x172554, roughness: 0.55, metalness: 0.4 })
+    cloudGeo,
+    new THREE.MeshStandardMaterial({
+      map: createGridTexture('#131b3a', 'rgba(96, 165, 250, 0.4)', 10, 6),
+      roughness: 0.6,
+      metalness: 0.35
+    })
   );
-  cloudPlatform.position.set(7, 6.1, -67);
+  cloudPlatform.position.set(7, 6.18, -68);
   cloudPlatform.receiveShadow = true;
   scene.add(cloudPlatform);
 
-  const cloudRim = new THREE.Mesh(
-    new THREE.BoxGeometry(44.5, 0.16, 32.5),
-    new THREE.MeshBasicMaterial({ color: 0x3b82f6 })
+  const cloudEdges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(cloudGeo),
+    new THREE.LineBasicMaterial({ color: 0x60a5fa })
   );
-  cloudRim.position.set(7, 6.45, -67);
-  scene.add(cloudRim);
+  cloudEdges.position.copy(cloudPlatform.position);
+  scene.add(cloudEdges);
 
   const cloudRackTex = createServerRackTexture('#60a5fa');
-  [-11, 25].forEach((dcX) => {
+  [-10, 24].forEach((dcX) => {
     const dcGroup = new THREE.Group();
-    dcGroup.position.set(dcX, 6.45, -72);
+    dcGroup.position.set(dcX, 6.48, -72);
 
     const shell = new THREE.Mesh(
-      new THREE.BoxGeometry(5.6, 9.5, 5.6),
+      new THREE.BoxGeometry(5.2, 8.8, 5.2),
       new THREE.MeshStandardMaterial({ map: cloudRackTex, metalness: 0.6, roughness: 0.3 })
     );
-    shell.position.y = 4.75;
+    shell.position.y = 4.4;
     shell.castShadow = true;
     dcGroup.add(shell);
 
     const roofRing = new THREE.Mesh(
-      new THREE.TorusGeometry(2.6, 0.15, 8, 24),
+      new THREE.TorusGeometry(2.4, 0.14, 8, 24),
       new THREE.MeshBasicMaterial({ color: 0x60a5fa })
     );
     roofRing.rotation.x = Math.PI / 2;
-    roofRing.position.y = 9.9;
+    roofRing.position.y = 9.2;
     dcGroup.add(roofRing);
 
     scene.add(dcGroup);
   });
 
   // Stylized 3D Cyber-Clouds around Cloud Citadel
-  const cloudPuffCoords = [
-    [-16, 10, -58], [28, 11, -56], [-18, 12, -78], [26, 13, -80], [6, 14, -85]
-  ];
   const cloudMat = new THREE.MeshStandardMaterial({
     color: 0xe0f2fe, emissive: 0x1d4ed8, emissiveIntensity: 0.25, transparent: true, opacity: 0.78
   });
-  cloudPuffCoords.forEach(([cx, cy, cz]) => {
+  [[-15, 10.5, -58], [26, 11.5, -57], [-16, 12.5, -78], [25, 13.5, -79]].forEach(([cx, cy, cz]) => {
     const cg = new THREE.Group();
     cg.position.set(cx, cy, cz);
-    [[-1.4, 0, 0, 1.5], [0, 0.5, 0, 2.0], [1.5, -0.1, 0.2, 1.4]].forEach(([ox, oy, oz, r]) => {
+    [[-1.3, 0, 0, 1.4], [0, 0.45, 0, 1.9], [1.4, -0.1, 0.2, 1.3]].forEach(([ox, oy, oz, r]) => {
       const s = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 12), cloudMat);
       s.position.set(ox, oy, oz);
       cg.add(s);
@@ -327,68 +440,22 @@ function buildThreeLayerWorld() {
     scene.add(cg);
   });
 
-  // Ascending Ambient Data Orbs (IoT -> Fog -> Cloud)
+  // Ascending Ambient Data Orbs
   for (let i = 0; i < 24; i++) {
     const orb = new THREE.Mesh(
-      new THREE.OctahedronGeometry(0.22, 0),
+      new THREE.OctahedronGeometry(0.2, 0),
       new THREE.MeshBasicMaterial({ color: i % 2 === 0 ? 0x22d3ee : 0x60a5fa })
     );
-    orb.position.set((Math.random() - 0.5) * 44, Math.random() * 10, 10 - Math.random() * 82);
+    orb.position.set((Math.random() - 0.5) * 40, Math.random() * 10, 10 - Math.random() * 82);
     scene.add(orb);
     ambientDataOrbs.push({ mesh: orb, speed: 1.2 + Math.random() * 1.4 });
   }
 
-  // ========================================================================
-  // 3D WINDING & ASCENDING CYBER-ROAD + GLOWING GUARDRAILS
-  // ========================================================================
+  // Smooth Continuous Winding & Ascending Cyber-Road
   const pts = ROAD_WAYPOINTS.map(w => new THREE.Vector3(w.x, w.y, w.z));
   roadCurve = new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.45);
   roadSamplePoints = roadCurve.getSpacedPoints(450);
-
-  const roadMat = new THREE.MeshStandardMaterial({
-    color: 0x1e293b,
-    emissive: 0x0369a1,
-    emissiveIntensity: 0.28,
-    roughness: 0.65
-  });
-  const curbMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
-  const dashMat = new THREE.MeshBasicMaterial({ color: 0xbae6fd });
-
-  const roadSegCount = 240;
-  for (let i = 0; i < roadSegCount; i++) {
-    const t1 = i / roadSegCount;
-    const t2 = (i + 1) / roadSegCount;
-    const p1 = roadCurve.getPointAt(t1);
-    const p2 = roadCurve.getPointAt(t2);
-    const len = p1.distanceTo(p2);
-
-    const seg = new THREE.Mesh(new THREE.BoxGeometry(7.6, 0.24, len + 0.18), roadMat);
-    seg.position.copy(p1).lerp(p2, 0.5);
-    seg.position.y -= 0.08;
-    seg.lookAt(p2.x, p2.y - 0.08, p2.z);
-    seg.receiveShadow = true;
-    scene.add(seg);
-
-    // Left & Right Glowing Guardrail Curbs (shows strict boundary!)
-    const tangent = new THREE.Vector3().subVectors(p2, p1).normalize();
-    const right = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
-
-    [-3.85, 3.85].forEach(side => {
-      const curb = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.34, len + 0.14), curbMat);
-      curb.position.copy(seg.position).addScaledVector(right, side);
-      curb.position.y += 0.12;
-      curb.lookAt(p2.x + right.x * side, p2.y + 0.04, p2.z + right.z * side);
-      scene.add(curb);
-    });
-
-    if (i % 4 === 0) {
-      const dash = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.05, len * 0.65), dashMat);
-      dash.position.copy(seg.position);
-      dash.position.y += 0.14;
-      dash.lookAt(p2.x, p2.y + 0.06, p2.z);
-      scene.add(dash);
-    }
-  }
+  buildSmoothCyberRoad(roadCurve, 7.6, 280);
 
   // Stars in background sky
   const starGeo = new THREE.BufferGeometry();
@@ -403,7 +470,6 @@ function buildThreeLayerWorld() {
 function clampPlayerToRoad(posVec) {
   if (!roadSamplePoints || roadSamplePoints.length === 0) return;
 
-  // Start Sanctuary area around (0, 0, 14)
   const distToStartHub = Math.hypot(posVec.x - 0, posVec.z - 14);
   if (posVec.z > 10.5 && distToStartHub <= 4.0) return;
 
@@ -418,7 +484,6 @@ function clampPlayerToRoad(posVec) {
     }
   }
 
-  // Lebar jalan = 7.6 unit (curb di ±3.85). Kunci karakter di dalam radius 3.15 unit!
   const maxRoadHalfWidth = 3.15;
   if (minDist > maxRoadHalfWidth) {
     const dx = posVec.x - nearestPt.x;
@@ -427,6 +492,21 @@ function clampPlayerToRoad(posVec) {
     posVec.x = nearestPt.x + (dx / len) * maxRoadHalfWidth;
     posVec.z = nearestPt.z + (dz / len) * maxRoadHalfWidth;
   }
+}
+
+function findClosestCurveT(posVec) {
+  if (!roadSamplePoints.length) return 0;
+  let bestIdx = 0;
+  let minDist = Infinity;
+  for (let i = 0; i < roadSamplePoints.length; i++) {
+    const pt = roadSamplePoints[i];
+    const d = Math.hypot(posVec.x - pt.x, posVec.z - pt.z);
+    if (d < minDist) {
+      minDist = d;
+      bestIdx = i;
+    }
+  }
+  return bestIdx / (roadSamplePoints.length - 1);
 }
 
 function getRoadHeightAt(x, z) {
@@ -453,56 +533,81 @@ function getLayerNameByY(y) {
 function buildHeroDrone() {
   playerGroup = new THREE.Group();
   playerParts.rotors = [];
+  playerParts.thrusters = [];
 
-  // Core chassis
-  const body = new THREE.Mesh(
-    new THREE.OctahedronGeometry(0.75, 1),
-    new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.7, roughness: 0.22 })
+  // Sleek Central Fuselage
+  const hull = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.8, 1),
+    new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.72, roughness: 0.22 })
   );
-  body.position.y = 1.35;
-  body.castShadow = true;
-  playerGroup.add(body);
+  hull.scale.set(1.15, 0.75, 1.35);
+  hull.position.y = 1.45;
+  hull.castShadow = true;
+  playerGroup.add(hull);
 
   // Glowing Visor Ring
   const visor = new THREE.Mesh(
-    new THREE.TorusGeometry(0.88, 0.08, 12, 32),
-    new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x06b6d4, emissiveIntensity: 1.0 })
+    new THREE.TorusGeometry(0.92, 0.09, 12, 32),
+    new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x06b6d4, emissiveIntensity: 1.1 })
   );
   visor.rotation.x = Math.PI / 2;
-  visor.position.y = 1.35;
+  visor.position.y = 1.45;
   playerGroup.add(visor);
   playerParts.visor = visor;
 
-  // 4 Quad-Rotor Arms + Spinning Propellers
-  const armMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 });
-  const propMat = new THREE.MeshBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.85 });
-  [[-0.95, 0.95], [0.95, 0.95], [-0.95, -0.95], [0.95, -0.95]].forEach(([ax, az]) => {
-    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 1.35), armMat);
-    arm.position.set(ax * 0.5, 1.48, az * 0.5);
-    arm.lookAt(ax, 1.48, az);
+  // 4 Quad-Rotor Pods + Spinning Translucent Rotor Discs
+  const armMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.85 });
+  const podMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: 0x0284c7, emissiveIntensity: 0.5 });
+  const bladeMat = new THREE.MeshBasicMaterial({ color: 0x7dd3fc });
+  const discMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.22, side: THREE.DoubleSide });
+
+  [[-1.05, 1.05], [1.05, 1.05], [-1.05, -1.05], [1.05, -1.05]].forEach(([ax, az]) => {
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.09, 1.5), armMat);
+    arm.position.set(ax * 0.5, 1.52, az * 0.5);
+    arm.lookAt(ax, 1.52, az);
     playerGroup.add(arm);
 
-    const rotor = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.03, 0.14), propMat);
-    rotor.position.set(ax, 1.56, az);
+    const pod = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.14, 0.24, 10), podMat);
+    pod.position.set(ax, 1.56, az);
+    playerGroup.add(pod);
+
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(0.55, 16), discMat);
+    disc.rotation.x = -Math.PI / 2;
+    disc.position.set(ax, 1.7, az);
+    playerGroup.add(disc);
+
+    const rotor = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.03, 0.12), bladeMat);
+    rotor.position.set(ax, 1.71, az);
     playerGroup.add(rotor);
     playerParts.rotors.push(rotor);
   });
 
-  // Left Emitter: Markov Radar (Cyan)
+  // Twin Rear Thrusters
+  [-0.32, 0.32].forEach(tx => {
+    const flame = new THREE.Mesh(
+      new THREE.ConeGeometry(0.16, 0.55, 8),
+      new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.85 })
+    );
+    flame.rotation.x = -Math.PI / 2;
+    flame.position.set(tx, 1.42, -1.25);
+    playerGroup.add(flame);
+    playerParts.thrusters.push(flame);
+  });
+
+  // Left Emitter: Markov Radar (Cyan) & Right Emitter: AOA Beam (Amber)
   const leftOrb = new THREE.Mesh(
     new THREE.SphereGeometry(0.24, 16, 16),
-    new THREE.MeshStandardMaterial({ color: 0x22d3ee, emissive: 0x06b6d4, emissiveIntensity: 1.2 })
+    new THREE.MeshStandardMaterial({ color: 0x22d3ee, emissive: 0x06b6d4, emissiveIntensity: 1.3 })
   );
-  leftOrb.position.set(-1.15, 1.35, 0.25);
+  leftOrb.position.set(-1.35, 1.5, 0.25);
   playerGroup.add(leftOrb);
   playerParts.leftOrb = leftOrb;
 
-  // Right Emitter: AOA Beam (Amber/Gold)
   const rightOrb = new THREE.Mesh(
     new THREE.SphereGeometry(0.24, 16, 16),
-    new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0xf59e0b, emissiveIntensity: 1.2 })
+    new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0xf59e0b, emissiveIntensity: 1.3 })
   );
-  rightOrb.position.set(1.15, 1.35, 0.25);
+  rightOrb.position.set(1.35, 1.5, 0.25);
   playerGroup.add(rightOrb);
   playerParts.rightOrb = rightOrb;
 
@@ -534,38 +639,51 @@ function buildAllClusterStations() {
       emissive: 0xdc2626,
       emissiveIntensity: 0.85
     });
-    const padRing = new THREE.Mesh(new THREE.RingGeometry(1.9, 2.45, 6), padMat);
+    const padRing = new THREE.Mesh(new THREE.RingGeometry(1.85, 2.35, 6), padMat);
     padRing.rotation.x = -Math.PI / 2;
-    padRing.position.y = 0.08;
+    padRing.position.y = 0.09;
     group.add(padRing);
 
-    // Server Cluster Pillar with rack texture
+    // Server Cluster Pillar
     const coreMat = new THREE.MeshStandardMaterial({
       map: rackTex,
       emissive: 0xef4444,
-      emissiveIntensity: 0.45,
+      emissiveIntensity: 0.4,
       metalness: 0.55,
       roughness: 0.35
     });
-    const coreMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.1, 2.7, 8), coreMat);
-    coreMesh.position.y = 1.4;
+    const coreMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 1.05, 2.5, 8), coreMat);
+    coreMesh.position.y = 1.3;
     coreMesh.castShadow = true;
     group.add(coreMesh);
 
+    // Floating Status Crystal above Server
+    const crystalMat = new THREE.MeshStandardMaterial({
+      color: 0xf87171, emissive: 0xef4444, emissiveIntensity: 0.9, roughness: 0.2
+    });
+    const crystalMesh = new THREE.Mesh(new THREE.OctahedronGeometry(0.45, 0), crystalMat);
+    crystalMesh.position.y = 3.25;
+    group.add(crystalMesh);
+
     // Vertical Holographic Beacon Beam
     const beaconMat = new THREE.MeshBasicMaterial({
-      color: 0xef4444, transparent: true, opacity: 0.22, side: THREE.DoubleSide
+      color: 0xef4444, transparent: true, opacity: 0.18, side: THREE.DoubleSide
     });
-    const beaconMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.75, 5.5, 12, 1, true), beaconMat);
-    beaconMesh.position.y = 3.2;
+    const beaconMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.72, 5.2, 12, 1, true), beaconMat);
+    beaconMesh.position.y = 3.0;
     group.add(beaconMesh);
 
-    // Orbiting Alert Halo
-    const haloMat = new THREE.MeshBasicMaterial({ color: 0xf87171, wireframe: true });
-    const haloMesh = new THREE.Mesh(new THREE.TorusGeometry(1.4, 0.08, 8, 24), haloMat);
-    haloMesh.position.y = 2.55;
-    haloMesh.rotation.x = Math.PI / 2;
+    // Dual Counter-Rotating Orbital Rings
+    const haloMat = new THREE.MeshBasicMaterial({ color: 0xf87171 });
+    const haloMesh = new THREE.Mesh(new THREE.TorusGeometry(1.38, 0.06, 8, 28), haloMat);
+    haloMesh.position.y = 2.4;
+    haloMesh.rotation.x = Math.PI / 2.4;
     group.add(haloMesh);
+
+    const halo2Mesh = new THREE.Mesh(new THREE.TorusGeometry(1.18, 0.05, 8, 28), haloMat);
+    halo2Mesh.position.y = 2.4;
+    halo2Mesh.rotation.x = -Math.PI / 2.4;
+    group.add(halo2Mesh);
 
     scene.add(group);
 
@@ -590,8 +708,11 @@ function buildAllClusterStations() {
       group,
       padMat,
       coreMat,
+      crystalMesh,
+      crystalMat,
       beaconMat,
       haloMesh,
+      halo2Mesh,
       haloMat,
       labelEl,
       instability: 100,
@@ -603,7 +724,7 @@ function buildAllClusterStations() {
 
 function spawnFloatingText(worldPos, text, colorHex) {
   const v = worldPos.clone();
-  v.y += 3.6;
+  v.y += 3.8;
   v.project(camera);
   if (v.z > 1) return;
 
@@ -620,7 +741,7 @@ function spawnFloatingText(worldPos, text, colorHex) {
   setTimeout(() => el.remove(), 1350);
 }
 
-function findNearestCluster(maxDist = 14) {
+function findNearestCluster(maxDist = 15) {
   let best = null;
   let bestDist = maxDist;
   clusterObjects.forEach(cl => {
@@ -634,7 +755,17 @@ function findNearestCluster(maxDist = 14) {
   return best;
 }
 
-function spawnBurstParticles(pos, colorHex, count = 16) {
+function spawnRadarDome(pos, colorHex) {
+  const dome = new THREE.Mesh(
+    new THREE.SphereGeometry(1.0, 20, 14, 0, Math.PI * 2, 0, Math.PI / 2),
+    new THREE.MeshBasicMaterial({ color: colorHex, wireframe: true, transparent: true, opacity: 0.9 })
+  );
+  dome.position.copy(pos);
+  scene.add(dome);
+  activeDomes.push({ mesh: dome, life: 0.75 });
+}
+
+function spawnBurstParticles(pos, colorHex, count = 18) {
   for (let i = 0; i < count; i++) {
     const p = new THREE.Mesh(
       new THREE.OctahedronGeometry(0.18, 0),
@@ -649,7 +780,7 @@ function spawnBurstParticles(pos, colorHex, count = 16) {
   }
 }
 
-function spawnDataPackets(fromPos, toPos, colorHex, count = 5) {
+function spawnDataPackets(fromPos, toPos, colorHex, count = 6) {
   for (let i = 0; i < count; i++) {
     const cube = new THREE.Mesh(
       new THREE.BoxGeometry(0.28, 0.28, 0.28),
@@ -661,8 +792,8 @@ function spawnDataPackets(fromPos, toPos, colorHex, count = 5) {
       mesh: cube,
       start: fromPos.clone().add(new THREE.Vector3(0, 1.4, 0)),
       end: toPos.clone().add(new THREE.Vector3(0, 1.5, 0)),
-      progress: -i * 0.14,
-      speed: 2.4
+      progress: -i * 0.12,
+      speed: 2.5
     });
   }
 }
@@ -681,23 +812,25 @@ function castHMCDSAction(type) {
   let amount = 50;
   if (type === 'markov') {
     CloudAudio.playMarkovScan();
-    spawnWaveEffect(target.group.position, 0x06b6d4, 2);
-    spawnBurstParticles(target.group.position, 0x22d3ee, 14);
+    spawnWaveEffect(target.group.position, 0x06b6d4, 3);
+    spawnRadarDome(target.group.position, 0x22d3ee);
+    spawnBurstParticles(target.group.position, 0x22d3ee, 16);
     spawnFloatingText(target.group.position, '📡 MARKOV SCAN: Blokir Overload!', '#22d3ee');
   } else if (type === 'aoa') {
     CloudAudio.playAOABeam();
     spawnBeamEffect(playerPos, target.group.position, 0xf59e0b);
     spawnDataPackets(playerPos, target.group.position, 0xfbbf24, 6);
-    spawnBurstParticles(target.group.position, 0xf59e0b, 16);
+    spawnBurstParticles(target.group.position, 0xf59e0b, 18);
     spawnFloatingText(target.group.position, '⚡ AOA BEAM (÷ × - +): Optimasi!', '#fbbf24');
   } else if (type === 'ultimate') {
     amount = 100;
     CloudAudio.playMarkovScan();
     CloudAudio.playAOABeam();
     spawnWaveEffect(target.group.position, 0xa855f7, 3);
+    spawnRadarDome(target.group.position, 0xa855f7);
     spawnBeamEffect(playerPos, target.group.position, 0x38bdf8);
     spawnDataPackets(playerPos, target.group.position, 0xc084fc, 8);
-    spawnBurstParticles(target.group.position, 0x38bdf8, 22);
+    spawnBurstParticles(target.group.position, 0x38bdf8, 24);
     spawnFloatingText(target.group.position, '💥 HYBRID HMCDS: 100% STABIL!', '#c084fc');
   }
 
@@ -713,10 +846,11 @@ function castHMCDSAction(type) {
     stabilizedCount++;
     CloudAudio.playClusterStabilized();
 
-    // Change visuals to Emerald Green Stabilized
     target.padMat.color.setHex(0x10b981);
     target.padMat.emissive.setHex(0x059669);
     target.coreMat.emissive.setHex(0x10b981);
+    target.crystalMat.color.setHex(0x34d399);
+    target.crystalMat.emissive.setHex(0x10b981);
     target.beaconMat.color.setHex(0x10b981);
     target.haloMat.color.setHex(0x34d399);
 
@@ -739,18 +873,18 @@ function spawnWaveEffect(pos, colorHex, rings = 2) {
       new THREE.MeshBasicMaterial({ color: colorHex, side: THREE.DoubleSide, transparent: true, opacity: 0.92 })
     );
     ring.rotation.x = -Math.PI / 2;
-    ring.position.set(pos.x, pos.y + 0.35 + r * 0.4, pos.z);
+    ring.position.set(pos.x, pos.y + 0.3 + r * 0.45, pos.z);
     scene.add(ring);
-    activeWaves.push({ mesh: ring, life: 0.72 - r * 0.12 });
+    activeWaves.push({ mesh: ring, life: 0.72 - r * 0.1 });
   }
 }
 
 function spawnBeamEffect(fromPos, toPos, colorHex) {
-  const start = fromPos.clone().add(new THREE.Vector3(0, 1.35, 0));
+  const start = fromPos.clone().add(new THREE.Vector3(0, 1.45, 0));
   const end = toPos.clone().add(new THREE.Vector3(0, 1.45, 0));
   const dist = start.distanceTo(end);
   const beam = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.2, 0.2, dist, 10),
+    new THREE.CylinderGeometry(0.22, 0.22, dist, 10),
     new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.95 })
   );
   beam.position.copy(start).lerp(end, 0.5);
@@ -782,7 +916,9 @@ function walkToNextUnstabilizedPos() {
   CloudAudio.playClick();
   const next = clusterObjects.find(c => !c.stabilized) || clusterObjects[0];
   if (next) {
-    autoWalkTarget = new THREE.Vector3(next.station.x, next.station.y, next.station.z + 3.4);
+    const dest = new THREE.Vector3(next.station.x, next.station.y, next.station.z + 3.2);
+    autoWalkTarget = dest;
+    autoWalkCurveTargetT = findClosestCurveT(dest);
   }
 }
 
@@ -791,7 +927,8 @@ function teleportToPos(idx) {
   const st = CLUSTER_STATIONS[idx];
   if (!st) return;
   autoWalkTarget = null;
-  playerPos.set(st.x, st.y, st.z + 3.4);
+  autoWalkCurveTargetT = null;
+  playerPos.set(st.x, st.y, st.z + 3.2);
   clampPlayerToRoad(playerPos);
   document.getElementById('teleportPopover').classList.remove('active');
 }
@@ -799,17 +936,23 @@ function teleportToPos(idx) {
 function resetPlayerPosition() {
   CloudAudio.playClick();
   autoWalkTarget = null;
+  autoWalkCurveTargetT = null;
   playerPos.set(0, 0, 14);
 }
 
 function adjustCameraZoom(delta) {
-  targetCameraDist = Math.max(8.0, Math.min(24, targetCameraDist + delta));
+  targetCameraDist = Math.max(8.0, Math.min(26.0, targetCameraDist + delta));
 }
 
 function setupInputListeners() {
   window.addEventListener('keydown', (e) => {
     const k = e.key.toLowerCase();
     keysPressed[k] = true;
+
+    if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) {
+      autoWalkTarget = null;
+      autoWalkCurveTargetT = null;
+    }
 
     if (k === 'escape') {
       closeSlideWindow();
@@ -828,6 +971,8 @@ function setupInputListeners() {
       castHMCDSAction('ultimate');
     } else if (k === 'o') {
       triggerOpenNearestDefeatedSlide();
+    } else if (k === 'r') {
+      resetPlayerPosition();
     }
   });
 
@@ -835,8 +980,13 @@ function setupInputListeners() {
     keysPressed[e.key.toLowerCase()] = false;
   });
 
-  const canvas = renderer.domElement;
-  canvas.addEventListener('mousedown', (e) => {
+  // 360-DEGREE STABLE SPHERICAL ORBIT CAMERA (Window-wide Mouse Drag + 2-Finger Touchpad + Touch)
+  window.addEventListener('mousedown', (e) => {
+    if (isIntroMode) return;
+    if (document.getElementById('slideModalOverlay').classList.contains('active')) return;
+    if (e.target.closest('button, a, select, input, .hud-brand-card, .hud-quest-card, .hud-top-right, .teleport-popover, .slide-floating-window, .corpse-reopen-badge')) {
+      return;
+    }
     isDraggingCamera = true;
     totalDragDist = 0;
     lastMousePos = { x: e.clientX, y: e.clientY };
@@ -844,22 +994,82 @@ function setupInputListeners() {
 
   window.addEventListener('mousemove', (e) => {
     if (!isDraggingCamera) return;
-    const dx = e.clientX - lastMousePos.x;
-    const dy = e.clientY - lastMousePos.y;
-    totalDragDist += Math.hypot(dx, dy);
-    targetCameraYaw -= dx * 0.006;
-    targetCameraPitch = Math.max(0.14, Math.min(1.08, targetCameraPitch + dy * 0.005));
+    const dx = Math.max(-45, Math.min(45, e.clientX - lastMousePos.x));
+    const dy = Math.max(-45, Math.min(45, e.clientY - lastMousePos.y));
     lastMousePos = { x: e.clientX, y: e.clientY };
+    totalDragDist += Math.hypot(dx, dy);
+
+    targetCameraYaw -= dx * 0.007;
+    targetCameraPitch = Math.max(0.12, Math.min(1.12, targetCameraPitch + dy * 0.005));
   });
 
   window.addEventListener('mouseup', () => {
     isDraggingCamera = false;
   });
 
-  canvas.addEventListener('wheel', (e) => {
+  // 2-Finger Touchpad 360° Orbit & Pinch/Scroll Zoom
+  window.addEventListener('wheel', (e) => {
+    if (isIntroMode) return;
+    if (document.getElementById('slideModalOverlay').classList.contains('active')) return;
+    if (e.target.closest('.teleport-popover, .slide-floating-window, #creditsModal')) return;
+
     e.preventDefault();
-    adjustCameraZoom(e.deltaY * 0.01);
+    const normFactor = e.deltaMode === 1 ? 16 : 1;
+    const rawDX = e.deltaX * normFactor;
+    const rawDY = e.deltaY * normFactor;
+    const clampedDX = Math.max(-36, Math.min(36, rawDX));
+    const clampedDY = Math.max(-36, Math.min(36, rawDY));
+
+    if (e.ctrlKey || e.altKey) {
+      const zoomStep = Math.max(-1.2, Math.min(1.2, rawDY * 0.022));
+      targetCameraDist = Math.max(8.0, Math.min(26.0, targetCameraDist + zoomStep));
+      return;
+    }
+
+    targetCameraYaw -= clampedDX * 0.0065;
+    targetCameraPitch = Math.max(0.12, Math.min(1.12, targetCameraPitch + clampedDY * 0.0038));
   }, { passive: false });
+
+  // Multi-Touch 1-Finger 360° Orbit & 2-Finger Pinch Zoom
+  window.addEventListener('touchstart', (e) => {
+    if (isIntroMode) return;
+    if (document.getElementById('slideModalOverlay').classList.contains('active')) return;
+    if (e.touches.length === 2) {
+      lastPinchDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+    } else if (e.touches.length === 1) {
+      lastTouchPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchmove', (e) => {
+    if (isIntroMode) return;
+    if (document.getElementById('slideModalOverlay').classList.contains('active')) return;
+    if (e.touches.length === 2 && lastPinchDist !== null) {
+      const curDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const diff = lastPinchDist - curDist;
+      lastPinchDist = curDist;
+      targetCameraDist = Math.max(8.0, Math.min(26.0, targetCameraDist + Math.max(-1.0, Math.min(1.0, diff * 0.035))));
+    } else if (e.touches.length === 1 && lastTouchPos) {
+      const dx = Math.max(-40, Math.min(40, e.touches[0].clientX - lastTouchPos.x));
+      const dy = Math.max(-40, Math.min(40, e.touches[0].clientY - lastTouchPos.y));
+      lastTouchPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      targetCameraYaw -= dx * 0.007;
+      targetCameraPitch = Math.max(0.12, Math.min(1.12, targetCameraPitch + dy * 0.005));
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchend', () => {
+    lastTouchPos = null;
+    lastPinchDist = null;
+  });
+
+  renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 
 function onWindowResize() {
@@ -873,61 +1083,75 @@ function gameLoop() {
   const dt = Math.min(clock.getDelta(), 0.05);
   hoverTime += dt;
 
-  let isMoving = false;
+  let moveX = 0;
+  let moveZ = 0;
 
-  // Player Movement + Strict Road Clamping
   if (!isIntroMode && !document.getElementById('slideModalOverlay').classList.contains('active')) {
-    let moveX = 0;
-    let moveZ = 0;
-    if (keysPressed['w'] || keysPressed['arrowup']) moveZ -= 1;
-    if (keysPressed['s'] || keysPressed['arrowdown']) moveZ += 1;
-    if (keysPressed['a'] || keysPressed['arrowleft']) moveX -= 1;
-    if (keysPressed['d'] || keysPressed['arrowright']) moveX += 1;
+    if (keysPressed['q']) targetCameraYaw += 2.0 * dt;
+    if (keysPressed['e']) targetCameraYaw -= 2.0 * dt;
 
-    if (keysPressed['q']) targetCameraYaw += 1.9 * dt;
-    if (keysPressed['e']) targetCameraYaw -= 1.9 * dt;
+    let inputForward = 0;
+    let inputRight = 0;
+    if (keysPressed['w'] || keysPressed['arrowup']) inputForward += 1;
+    if (keysPressed['s'] || keysPressed['arrowdown']) inputForward -= 1;
+    if (keysPressed['a'] || keysPressed['arrowleft']) inputRight -= 1;
+    if (keysPressed['d'] || keysPressed['arrowright']) inputRight += 1;
 
-    if (moveX !== 0 || moveZ !== 0) {
-      autoWalkTarget = null;
-      isMoving = true;
-      const forward = new THREE.Vector3(-Math.sin(cameraYaw), 0, -Math.cos(cameraYaw));
-      const right = new THREE.Vector3(Math.cos(cameraYaw), 0, -Math.sin(cameraYaw));
-      const dir = new THREE.Vector3()
-        .addScaledVector(forward, -moveZ)
-        .addScaledVector(right, moveX)
-        .normalize();
+    if (inputForward !== 0 || inputRight !== 0) {
+      const forwardX = -Math.sin(cameraYaw);
+      const forwardZ = -Math.cos(cameraYaw);
+      const rightX = Math.cos(cameraYaw);
+      const rightZ = -Math.sin(cameraYaw);
 
-      playerPos.addScaledVector(dir, 13.5 * dt);
-      clampPlayerToRoad(playerPos);
-      playerRotY = Math.atan2(dir.x, dir.z);
-      CloudAudio.playFootstep();
-    } else if (autoWalkTarget) {
-      const toTarget = new THREE.Vector3(autoWalkTarget.x - playerPos.x, 0, autoWalkTarget.z - playerPos.z);
-      const dist = toTarget.length();
-      if (dist < 0.6) {
-        autoWalkTarget = null;
+      moveX = forwardX * inputForward + rightX * inputRight;
+      moveZ = forwardZ * inputForward + rightZ * inputRight;
+    } else if (autoWalkCurveTargetT !== null && roadCurve) {
+      const currentT = findClosestCurveT(playerPos);
+      if (Math.abs(autoWalkCurveTargetT - currentT) > 0.008) {
+        const stepDir = autoWalkCurveTargetT > currentT ? 1 : -1;
+        const nextSteerT = Math.max(0, Math.min(1, currentT + stepDir * 0.025));
+        const steerPt = roadCurve.getPointAt(nextSteerT);
+        const toSteer = steerPt.clone().sub(playerPos);
+        if (toSteer.length() > 0.2) {
+          toSteer.normalize();
+          moveX = toSteer.x;
+          moveZ = toSteer.z;
+        }
       } else {
-        isMoving = true;
-        toTarget.normalize();
-        playerPos.addScaledVector(toTarget, 15.0 * dt);
-        clampPlayerToRoad(playerPos);
-        playerRotY = Math.atan2(toTarget.x, toTarget.z);
-        CloudAudio.playFootstep();
+        autoWalkCurveTargetT = null;
+        autoWalkTarget = null;
       }
     }
-
-    const targetY = getRoadHeightAt(playerPos.x, playerPos.z);
-    playerPos.y += (targetY - playerPos.y) * 0.16;
-
-    const layerPill = document.getElementById('hudLayerIndicator');
-    if (layerPill) layerPill.innerText = getLayerNameByY(playerPos.y);
   }
+
+  const isMoving = Math.hypot(moveX, moveZ) > 0.05;
+  if (isMoving) {
+    const norm = Math.hypot(moveX, moveZ);
+    const speed = 14.5;
+    playerPos.x += (moveX / norm) * speed * dt;
+    playerPos.z += (moveZ / norm) * speed * dt;
+    clampPlayerToRoad(playerPos);
+
+    const targetYaw = Math.atan2(moveX, moveZ);
+    let diff = targetYaw - playerRotY;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    playerRotY += diff * Math.min(1, dt * 12);
+
+    CloudAudio.playFootstep();
+  }
+
+  const targetY = getRoadHeightAt(playerPos.x, playerPos.z);
+  playerPos.y += (targetY - playerPos.y) * Math.min(1, dt * 12);
+
+  const layerPill = document.getElementById('hudLayerIndicator');
+  if (layerPill) layerPill.innerText = getLayerNameByY(playerPos.y);
 
   // Auto-walk destination beacon
   if (autoWalkBeacon) {
     if (autoWalkTarget) {
       autoWalkBeacon.visible = true;
-      autoWalkBeacon.position.set(autoWalkTarget.x, autoWalkTarget.y + 0.15, autoWalkTarget.z);
+      autoWalkBeacon.position.set(autoWalkTarget.x, autoWalkTarget.y + 0.16, autoWalkTarget.z);
       const s = 1 + Math.sin(hoverTime * 6) * 0.18;
       autoWalkBeacon.scale.set(s, s, 1);
     } else {
@@ -935,17 +1159,23 @@ function gameLoop() {
     }
   }
 
-  // Update Hero Drone Transform & Propellers
+  // Update Hero Drone Transform, Rotors & Thrusters
   if (playerGroup) {
-    playerGroup.position.set(playerPos.x, playerPos.y + Math.sin(hoverTime * 3.5) * 0.15, playerPos.z);
+    playerGroup.position.set(playerPos.x, playerPos.y + Math.sin(hoverTime * 3.5) * 0.14, playerPos.z);
     playerGroup.rotation.y = playerRotY;
-    playerGroup.rotation.x = isMoving ? 0.14 : 0;
-    if (playerParts.visor) playerParts.visor.rotation.z += dt * 1.8;
+    playerGroup.rotation.x = THREE.MathUtils.lerp(playerGroup.rotation.x, isMoving ? 0.18 : 0, dt * 10);
+    if (playerParts.visor) playerParts.visor.rotation.z += dt * 2.0;
     if (playerParts.rotors) {
-      playerParts.rotors.forEach(r => { r.rotation.y += dt * (isMoving ? 24 : 14); });
+      playerParts.rotors.forEach(r => { r.rotation.y += dt * (isMoving ? 28 : 16); });
     }
-    if (playerParts.leftOrb) playerParts.leftOrb.position.y = 1.35 + Math.sin(hoverTime * 4) * 0.12;
-    if (playerParts.rightOrb) playerParts.rightOrb.position.y = 1.35 + Math.cos(hoverTime * 4) * 0.12;
+    if (playerParts.thrusters) {
+      playerParts.thrusters.forEach(t => {
+        const sc = isMoving ? 1.2 + Math.sin(hoverTime * 25) * 0.35 : 0.65;
+        t.scale.set(1, sc, 1);
+      });
+    }
+    if (playerParts.leftOrb) playerParts.leftOrb.position.y = 1.5 + Math.sin(hoverTime * 4) * 0.12;
+    if (playerParts.rightOrb) playerParts.rightOrb.position.y = 1.5 + Math.cos(hoverTime * 4) * 0.12;
   }
 
   // Animate Environment Elements
@@ -963,6 +1193,11 @@ function gameLoop() {
   // Update Clusters & Projected 3D Labels
   clusterObjects.forEach((cl) => {
     cl.haloMesh.rotation.z += dt * (cl.stabilized ? 0.8 : 2.8);
+    if (cl.halo2Mesh) cl.halo2Mesh.rotation.z -= dt * (cl.stabilized ? 0.6 : 2.4);
+    if (cl.crystalMesh) {
+      cl.crystalMesh.rotation.y += dt * 2.2;
+      cl.crystalMesh.position.y = 3.25 + Math.sin(hoverTime * 3 + cl.station.id) * 0.18;
+    }
     if (cl.wobble > 0) {
       cl.wobble = Math.max(0, cl.wobble - dt * 1.6);
       cl.group.rotation.z = Math.sin(hoverTime * 35) * cl.wobble * 0.3;
@@ -970,7 +1205,7 @@ function gameLoop() {
       cl.group.rotation.z = 0;
     }
 
-    const labelPos = cl.group.position.clone().add(new THREE.Vector3(0, 3.6, 0));
+    const labelPos = cl.group.position.clone().add(new THREE.Vector3(0, 3.9, 0));
     labelPos.project(camera);
     if (labelPos.z > 1 || isIntroMode) {
       cl.labelEl.style.opacity = '0';
@@ -981,7 +1216,7 @@ function gameLoop() {
     }
   });
 
-  // Update Waves, Beams, Particles & Data Packets
+  // Update Waves, Radar Domes, Beams, Particles & Data Packets
   for (let i = activeWaves.length - 1; i >= 0; i--) {
     const w = activeWaves[i];
     w.life -= dt;
@@ -990,6 +1225,17 @@ function gameLoop() {
     if (w.life <= 0) {
       scene.remove(w.mesh);
       activeWaves.splice(i, 1);
+    }
+  }
+
+  for (let i = activeDomes.length - 1; i >= 0; i--) {
+    const d = activeDomes[i];
+    d.life -= dt;
+    d.mesh.scale.addScalar(dt * 5.5);
+    d.mesh.material.opacity = Math.max(0, d.life * 1.2);
+    if (d.life <= 0) {
+      scene.remove(d.mesh);
+      activeDomes.splice(i, 1);
     }
   }
 
@@ -1032,22 +1278,29 @@ function gameLoop() {
     }
   }
 
-  // Smooth Camera Orbit
-  cameraYaw += (targetCameraYaw - cameraYaw) * 0.12;
-  cameraPitch += (targetCameraPitch - cameraPitch) * 0.12;
-  cameraDist += (targetCameraDist - cameraDist) * 0.12;
-
-  const focusTarget = new THREE.Vector3(playerPos.x, playerPos.y + 1.8, playerPos.z);
-  smoothFocusPos.lerp(focusTarget, 0.12);
-
+  // 360-DEGREE STABLE SPHERICAL ORBIT CAMERA (Exponential Damping + Anti-Floor Clip)
   if (isIntroMode) {
-    camera.position.set(0, 7.5, 24.5);
+    const introCamPos = new THREE.Vector3(0, 7.5, 24.5);
+    camera.position.lerp(introCamPos, dt * 4.8);
     camera.lookAt(0, 1.5, 14);
+    smoothFocusPos.set(playerPos.x, playerPos.y + 1.8, playerPos.z);
   } else {
-    const cx = smoothFocusPos.x + cameraDist * Math.cos(cameraPitch) * Math.sin(cameraYaw);
-    const cy = smoothFocusPos.y + cameraDist * Math.sin(cameraPitch);
-    const cz = smoothFocusPos.z + cameraDist * Math.cos(cameraPitch) * Math.cos(cameraYaw);
-    camera.position.set(cx, cy, cz);
+    const camSmooth = 1.0 - Math.exp(-12.5 * dt);
+    cameraYaw = THREE.MathUtils.lerp(cameraYaw, targetCameraYaw, camSmooth);
+    cameraPitch = THREE.MathUtils.lerp(cameraPitch, targetCameraPitch, camSmooth);
+    cameraDist = THREE.MathUtils.lerp(cameraDist, targetCameraDist, camSmooth);
+
+    const desiredFocus = new THREE.Vector3(playerPos.x, playerPos.y + 1.8, playerPos.z);
+    smoothFocusPos.lerp(desiredFocus, 1.0 - Math.exp(-15.0 * dt));
+
+    const horizDist = cameraDist * Math.cos(cameraPitch);
+    const vertOffset = cameraDist * Math.sin(cameraPitch);
+
+    camera.position.set(
+      smoothFocusPos.x + Math.sin(cameraYaw) * horizDist,
+      Math.max(playerPos.y + 1.15, smoothFocusPos.y + vertOffset),
+      smoothFocusPos.z + Math.cos(cameraYaw) * horizDist
+    );
     camera.lookAt(smoothFocusPos);
   }
 
