@@ -1,8 +1,10 @@
 // ============================================================================
-// HMCDS FOG-CLOUD CYBER-DISPATCHER — UI CONTROLLER, KATEX & SIMULATOR
+// HMCDS FOG-CLOUD CYBER-DISPATCHER — UI CONTROLLER, KATEX & 3D STAGE SIMULATOR
 // ============================================================================
 
 let currentOpenSlideIdx = 0;
+let simClockTimer = null;
+let simClockValue = 0;
 
 function startGameFromIntro() {
   if (!isIntroMode) return;
@@ -25,13 +27,13 @@ function updateQuestHudProgress() {
   const descEl = document.getElementById('questProgressDesc');
   if (!titleEl || !descEl) return;
 
-  titleEl.innerText = `Misi HMCDS • ${stabilizedCount}/${CLUSTER_STATIONS.length} Cluster Stabil`;
+  titleEl.innerText = `Misi HMCDS • ${stabilizedCount}/${CLUSTER_STATIONS.length} Awan Pos Putih`;
 
   const nextCl = clusterObjects.find(c => !c.stabilized);
   if (nextCl) {
-    descEl.innerHTML = `Target Berikutnya: <strong>${nextCl.station.name}</strong> (${nextCl.station.layerName}). Tekan <strong>📡 Markov [J]</strong> & <strong>⚡ AOA [K]</strong> (atau <strong>[L]</strong>) untuk membuka Slide ${nextCl.station.posNum}!`;
+    descEl.innerHTML = `Target Berikutnya: <strong>${nextCl.station.name}</strong> (${nextCl.station.layerName}). Serang 2x dengan <strong>📡 Markov [J]</strong> & <strong>⚡ AOA [K]</strong> (atau <strong>[L]</strong>) agar awan mendung berubah putih & membuka Slide ${nextCl.station.posNum}!`;
   } else {
-    descEl.innerHTML = `🎉 <strong>Seluruh ${CLUSTER_STATIONS.length} Cluster Telah Stabil!</strong> Dekati Cluster hijau mana pun & tekan <strong>[O]</strong> untuk membuka kembali slide.`;
+    descEl.innerHTML = `🎉 <strong>Seluruh ${CLUSTER_STATIONS.length} Awan Pos Telah Putih & Stabil!</strong> Dekati Pos mana pun & tekan <strong>[O]</strong> untuk membuka kembali slide.`;
   }
   renderTeleportList();
 }
@@ -73,6 +75,16 @@ function openSlideWindow(slideIdx) {
     renderKaTeXInElement(bodyEl);
   }
 
+  if (typeof HMCDSStage3D !== 'undefined') {
+    const stageCanvas = document.getElementById('embeddedThreeCanvas');
+    if (stageCanvas) {
+      HMCDSStage3D.init(stageCanvas);
+      HMCDSStage3D.start();
+      setTimeout(() => HMCDSStage3D.resize(), 60);
+      setTimeout(() => HMCDSStage3D.resize(), 200);
+    }
+  }
+
   updateHMCDSimulatorUI();
   if (typeof HMCDS_Stepper !== 'undefined') {
     HMCDS_Stepper.render();
@@ -83,6 +95,10 @@ function closeSlideWindow() {
   const overlay = document.getElementById('slideModalOverlay');
   const wasActive = overlay && overlay.classList.contains('active');
   if (overlay) overlay.classList.remove('active');
+
+  if (typeof HMCDSStage3D !== 'undefined') {
+    HMCDSStage3D.stop();
+  }
 
   if (wasActive && typeof CloudAudio !== 'undefined' && CloudAudio.resumeFromPresentation) {
     CloudAudio.resumeFromPresentation();
@@ -97,6 +113,10 @@ function toggleSlideFullscreen() {
   const isFull = win.classList.toggle('fullscreen-mode');
   if (btn) {
     btn.innerText = isFull ? '🗗 Ukuran Mengambang' : '⛶ Layar Penuh';
+  }
+  if (typeof HMCDSStage3D !== 'undefined') {
+    setTimeout(() => HMCDSStage3D.resize(), 100);
+    setTimeout(() => HMCDSStage3D.resize(), 300);
   }
 }
 
@@ -126,8 +146,8 @@ function renderTeleportList() {
     const cl = clusterObjects[idx];
     const isOk = cl && cl.stabilized;
     const badge = isOk
-      ? `<span style="color:#059669; font-size:10.5px;">🟢 Stabil [O]</span>`
-      : `<span style="color:#dc2626; font-size:10.5px;">🔴 Overload 100%</span>`;
+      ? `<span style="color:#059669; font-size:10.5px;">☁️ Putih Stabil [O]</span>`
+      : `<span style="color:#dc2626; font-size:10.5px;">🌩️ Mendung (2x Serang)</span>`;
 
     return `
       <div class="teleport-item">
@@ -156,8 +176,15 @@ function closeCreditsModal() {
 }
 
 // ============================================================================
-// INTERACTIVE HMCDS SIMULATOR CONSOLE (Slide 7)
+// EMBEDDED 3D TOPOLOGY STAGE & LIVE HMCDS SIMULATOR CONSOLE
 // ============================================================================
+function setEmbedded3DMode(mode) {
+  if (typeof CloudAudio !== 'undefined' && CloudAudio.playClick) CloudAudio.playClick();
+  if (typeof HMCDSStage3D !== 'undefined') {
+    HMCDSStage3D.setMode(mode);
+  }
+}
+
 function updateHMCDSimulatorUI() {
   const algoEl = document.getElementById('simAlgoSelect');
   const taskEl = document.getElementById('simTaskSelect');
@@ -168,22 +195,101 @@ function updateHMCDSimulatorUI() {
   const d = HMCDS_SIM_DATA[tasks][algo];
   if (!d) return;
 
-  document.getElementById('simMakespanVal').innerText = `${d.makespan.toFixed(2)} dtk`;
-  document.getElementById('simSchedVal').innerText = `${d.schedTime.toFixed(2)} dtk`;
-  document.getElementById('simDelayVal').innerText = algo === 'hmcds' ? '-11,72%' : (algo === 'aoa' ? '-8,40%' : 'Baseline');
-  document.getElementById('simPirVal').innerText = algo === 'hmcds' ? '+4,66% (Unggul)' : (algo === 'aoa' ? '+2,10%' : '0,00%');
+  const activeTag = document.getElementById('simActiveTag');
+  if (activeTag) {
+    if (algo === 'hmcds') {
+      activeTag.innerText = 'Hybrid HMCDS (Markov + AOA)';
+      activeTag.style.background = '#e0f2fe';
+      activeTag.style.color = '#0369a1';
+    } else if (algo === 'aoa') {
+      activeTag.innerText = 'AOA Saja (Tanpa Markov)';
+      activeTag.style.background = '#fef3c7';
+      activeTag.style.color = '#b45309';
+    } else {
+      activeTag.innerText = 'WOA Baseline (Overload)';
+      activeTag.style.background = '#fee2e2';
+      activeTag.style.color = '#991b1b';
+    }
+  }
 
-  document.getElementById('simFogBar').style.width = `${d.fogUtil}%`;
-  document.getElementById('simFogPct').innerText = `${d.fogUtil}%`;
-  document.getElementById('simCloudBar').style.width = `${d.cloudUtil}%`;
-  document.getElementById('simCloudPct').innerText = `${d.cloudUtil}%`;
-  document.getElementById('simNoteText').innerText = d.note;
+  const msEl = document.getElementById('simMakespanVal');
+  if (msEl) msEl.innerText = `${d.makespan.toFixed(2)} s`;
+  const scEl = document.getElementById('simSchedVal');
+  if (scEl) scEl.innerText = `${d.schedTime.toFixed(2)} s`;
+  const dlEl = document.getElementById('simDelayVal');
+  if (dlEl) dlEl.innerText = algo === 'hmcds' ? '-11,72%' : (algo === 'aoa' ? '-8,40%' : 'Baseline');
+  const pirEl = document.getElementById('simPirVal');
+  if (pirEl) pirEl.innerText = algo === 'hmcds' ? '+4,66%' : (algo === 'aoa' ? '+2,10%' : '0,00%');
+
+  const fogBar = document.getElementById('simFogBar');
+  const fogPct = document.getElementById('simFogPct');
+  if (fogBar && fogPct) {
+    fogBar.style.width = `${d.fogUtil}%`;
+    fogBar.className = `meter-fill ${algo === 'woa' ? 'fill-danger' : 'fill-sky'}`;
+    fogPct.innerText = algo === 'woa' ? `${d.fogUtil}% (Overload ⚠️)` : `${d.fogUtil}% (Optimal Low-Load)`;
+  }
+
+  const edgeUtil = algo === 'hmcds' ? 65 : (algo === 'aoa' ? 82 : 96);
+  const edgeBar = document.getElementById('simEdgeBar');
+  const edgePct = document.getElementById('simEdgePct');
+  if (edgeBar && edgePct) {
+    edgeBar.style.width = `${edgeUtil}%`;
+    edgeBar.className = `meter-fill ${algo === 'hmcds' ? 'fill-green' : 'fill-danger'}`;
+    edgePct.innerText = algo === 'hmcds' ? `${edgeUtil}% (Dijaga Markov P_ij)` : `${edgeUtil}% (Bottleneck!)`;
+  }
+
+  const cloudBar = document.getElementById('simCloudBar');
+  const cloudPct = document.getElementById('simCloudPct');
+  if (cloudBar && cloudPct) {
+    cloudBar.style.width = `${d.cloudUtil}%`;
+    cloudPct.innerText = `${d.cloudUtil}% (${algo === 'woa' ? 'Underutilized' : 'Non-RT Seimbang'})`;
+  }
+
+  const banner = document.getElementById('simStatusBanner');
+  const noteEl = document.getElementById('simNoteText');
+  if (noteEl) noteEl.innerHTML = `<strong>Hasil Analisis:</strong> ${d.note}`;
+  if (banner) {
+    banner.className = `sim-status-banner ${algo === 'woa' ? 'danger' : ''}`;
+  }
 }
 
 function runHMCDSimulation() {
-  CloudAudio.playAOABeam();
+  if (typeof CloudAudio !== 'undefined' && CloudAudio.playAOABeam) CloudAudio.playAOABeam();
   updateHMCDSimulatorUI();
-  if (typeof HMCDS_Stepper !== 'undefined') {
-    HMCDS_Stepper.render();
+
+  const algoEl = document.getElementById('simAlgoSelect');
+  const taskEl = document.getElementById('simTaskSelect');
+  const algo = algoEl ? algoEl.value : 'hmcds';
+  const tasks = taskEl ? parseInt(taskEl.value, 10) : 500;
+  const targetMakespan = HMCDS_SIM_DATA[tasks][algo].makespan;
+
+  if (typeof HMCDSStage3D !== 'undefined') {
+    HMCDSStage3D.runSimulation(algo);
   }
+
+  if (simClockTimer) clearInterval(simClockTimer);
+  simClockValue = 0;
+  const step = targetMakespan / 26;
+  simClockTimer = setInterval(() => {
+    simClockValue += step;
+    if (simClockValue >= targetMakespan) {
+      simClockValue = targetMakespan;
+      clearInterval(simClockTimer);
+    }
+    const clk = document.getElementById('clockValue');
+    if (clk) clk.innerText = `${simClockValue.toFixed(2)}s`;
+  }, 45);
+}
+
+function resetHMCDSimulation() {
+  if (typeof CloudAudio !== 'undefined' && CloudAudio.playClick) CloudAudio.playClick();
+  if (simClockTimer) clearInterval(simClockTimer);
+  const clk = document.getElementById('clockValue');
+  if (clk) clk.innerText = '0.00s';
+  const algoEl = document.getElementById('simAlgoSelect');
+  if (algoEl) algoEl.value = 'hmcds';
+  if (typeof HMCDSStage3D !== 'undefined') {
+    HMCDSStage3D.clearTasks();
+  }
+  updateHMCDSimulatorUI();
 }

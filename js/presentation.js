@@ -60,4 +60,12 @@ window.addEventListener('DOMContentLoaded', () => {
   if (typeof HMCDS_Stepper !== 'undefined') {
     HMCDS_Stepper.render();
   }
+  if (typeof HMCDSStage3D !== 'undefined') {
+    const stageCanvas = document.getElementById('embeddedThreeCanvas');
+    if (stageCanvas) {
+      HMCDSStage3D.init(stageCanvas);
+      HMCDSStage3D.start();
+      window.addEventListener('resize', () => HMCDSStage3D.resize());
+    }
+  }
 });

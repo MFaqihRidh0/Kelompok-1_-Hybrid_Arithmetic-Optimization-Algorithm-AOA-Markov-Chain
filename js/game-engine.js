@@ -991,15 +991,19 @@ function castHMCDSAction(type) {
   target.instability = Math.max(0, target.instability - amount);
   target.wobble = 0.45;
 
-  // Begitu diklik J atau K, awan mendung langsung berubah menjadi PUTIH cerah!
-  target.coreMat.color.setHex(0xffffff);
-  target.coreMat.emissive.setHex(0xe0f2fe);
-  target.coreMat.emissiveIntensity = 0.35;
-
   const idx = target.station.id;
   const hpFill = document.getElementById(`clusterHpFill_${idx}`);
   if (hpFill) hpFill.style.width = `${target.instability}%`;
 
+  // Jika baru 1x serang (instability masih 50%), awan masih mendung keabu-abuan
+  if (target.instability > 0) {
+    target.coreMat.color.setHex(0x475569);
+    target.coreMat.emissive.setHex(0x334155);
+    const hintEl = document.getElementById(`clusterHint_${idx}`);
+    if (hintEl) hintEl.innerText = '1x SERANG LAGI! • Tekan [J] atau [K]';
+  }
+
+  // Setelah 2x serang (instability <= 0), barulah awan Pos berubah menjadi PUTIH cerah!
   if (target.instability <= 0 && !target.stabilized) {
     target.stabilized = true;
     stabilizedCount++;

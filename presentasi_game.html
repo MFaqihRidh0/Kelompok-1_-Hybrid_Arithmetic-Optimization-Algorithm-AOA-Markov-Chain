@@ -8,8 +8,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Nunito:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
-  <!-- Three.js & KaTeX via CDN -->
+  <!-- Three.js, OrbitControls & KaTeX via CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
@@ -311,47 +312,6 @@
             </div>
           </div>
 
-          <!-- Interactive Simulator -->
-          <div class="sim-console-box">
-            <div class="sim-controls-row">
-              <strong style="font-size:12.5px; color:#38bdf8;">🎮 Simulator Beban Fog–Cloud:</strong>
-              <select id="simAlgoSelect" class="sim-select" onchange="updateHMCDSimulatorUI()">
-                <option value="hmcds">Hybrid HMCDS (Markov + AOA)</option>
-                <option value="aoa">AOA Saja (Tanpa Markov)</option>
-                <option value="woa">WOA Baseline</option>
-              </select>
-              <select id="simTaskSelect" class="sim-select" onchange="updateHMCDSimulatorUI()">
-                <option value="500">500 Tugas (NASA iPSC)</option>
-                <option value="1000">1.000 Tugas (NASA iPSC)</option>
-                <option value="2000">2.000 Tugas (NASA iPSC)</option>
-              </select>
-              <button class="btn-hud-primary" onclick="runHMCDSimulation()">▶ Jalankan Simulasi</button>
-            </div>
-
-            <div class="grid-4" style="margin-bottom:10px;">
-              <div class="sim-kpi-card"><div class="sim-kpi-label">Makespan</div><div class="sim-kpi-val" id="simMakespanVal">47.21 dtk</div></div>
-              <div class="sim-kpi-card"><div class="sim-kpi-label">Waktu Penjadwalan</div><div class="sim-kpi-val" id="simSchedVal">6.86 dtk</div></div>
-              <div class="sim-kpi-card"><div class="sim-kpi-label">Reduksi Delay</div><div class="sim-kpi-val" id="simDelayVal">-11,72%</div></div>
-              <div class="sim-kpi-card"><div class="sim-kpi-label">Keunggulan PIR</div><div class="sim-kpi-val" id="simPirVal">+4,66%</div></div>
-            </div>
-
-            <div class="grid-2">
-              <div>
-                <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700;">
-                  <span>Utilisasi Fog Layer (15 VM)</span><span id="simFogPct">68%</span>
-                </div>
-                <div class="sim-bar-track"><div class="sim-bar-fill" id="simFogBar" style="width:68%; background:#06b6d4;"></div></div>
-              </div>
-              <div>
-                <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700;">
-                  <span>Utilisasi Cloud Layer (40 VM)</span><span id="simCloudPct">66%</span>
-                </div>
-                <div class="sim-bar-track"><div class="sim-bar-fill" id="simCloudBar" style="width:66%; background:#10b981;"></div></div>
-              </div>
-            </div>
-            <p id="simNoteText" style="font-size:11.5px; color:#cbd5e1; margin-top:8px;"></p>
-          </div>
-
           <div class="card" style="margin-top:8px;">
             <h4 style="font-size:12.5px; margin-bottom:5px;">📚 Glosarium Tanya Jawab (Q&amp;A Dosen)</h4>
             <ul style="font-size:11.5px; margin-left:16px; line-height:1.5;">
@@ -361,6 +321,129 @@
               <li><strong>PIR:</strong> $\text{PIR}(\%) = \frac{Y - Y'}{Y} \times 100\%$ (persentase peningkatan performa terhadap pembanding).</li>
               <li><strong>Memoryless Property &amp; MIPS:</strong> Status berikutnya hanya bergantung pada status saat ini; MIPS = <em>Million Instructions Per Second</em>.</li>
             </ul>
+          </div>
+        </div>
+
+        <!-- PANGGUNG 3D TOPOLOGI FOG-CLOUD & CARA KERJA MARKOV + AOA (TERSEMAT DI JENDELA SLIDE) -->
+        <div class="embedded-dc-stage">
+          <div style="position:absolute; top:8px; left:12px; right:12px; display:flex; justify-content:space-between; align-items:center; z-index:10; pointer-events:none; flex-wrap:wrap; gap:6px;">
+            <div style="background:rgba(255,255,255,0.92); backdrop-filter:blur(6px); padding:4px 12px; border-radius:999px; font-size:11px; font-weight:800; color:#0f172a; border:1px solid #cbd5e1; display:flex; align-items:center; gap:6px;">
+              <span style="width:8px; height:8px; border-radius:50%; background:#0284c7; display:inline-block;"></span>
+              <span id="embeddedStageTitle">🌐 Panggung 3D: Topologi 3-Lapis Fog–Cloud &amp; CF_Manager</span>
+            </div>
+            <div style="display:flex; gap:5px; pointer-events:auto; flex-wrap:wrap;">
+              <button class="stage-mode-btn active" id="btnModeEmbeddedTopo" onclick="setEmbedded3DMode('topology')">Topologi Fog–Cloud</button>
+              <button class="stage-mode-btn" id="btnModeEmbeddedMarkov" onclick="setEmbedded3DMode('markov')">Markov Chain (P_ij)</button>
+              <button class="stage-mode-btn" id="btnModeEmbeddedExplore" onclick="setEmbedded3DMode('aoa-explore')">AOA Eksplorasi (÷, ×)</button>
+              <button class="stage-mode-btn" id="btnModeEmbeddedExploit" onclick="setEmbedded3DMode('aoa-exploit')">AOA Eksploitasi (-, +)</button>
+            </div>
+          </div>
+          <div id="embeddedThreeCanvas" style="width:100%; height:100%;"></div>
+          <div style="position:absolute; bottom:8px; left:12px; right:12px; display:flex; justify-content:space-between; align-items:center; z-index:10; pointer-events:none;">
+            <div style="background:rgba(15,23,42,0.88); color:#f8fafc; font-size:10px; font-family:'JetBrains Mono',monospace; padding:3px 10px; border-radius:6px;">
+              Fog Cluster A (1.500–2.800 MIPS) &bull; Fog Cluster B (100–800 MIPS) &bull; Cloud DC (3.000–5.000 MIPS)
+            </div>
+            <div style="background:rgba(255,255,255,0.9); color:#475569; font-size:9.5px; font-weight:700; padding:3px 8px; border-radius:6px;">
+              🖐️ Orbit: Klik + Drag | Zoom: Scroll
+            </div>
+          </div>
+        </div>
+
+        <!-- KONSOL SIMULASI PENJADWALAN: WOA vs AOA vs HYBRID HMCDS -->
+        <div class="sim-dashboard">
+          <div class="sim-header-row">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-weight:800; font-size:11.5px; color:var(--coffee-950);">
+                🎮 KONSOL SIMULASI PENJADWALAN: MARKOV CHAIN + AOA (HMCDS)
+              </span>
+              <span id="simActiveTag" style="font-size:10px; font-weight:800; padding:2px 8px; border-radius:999px; background:#e0f2fe; color:#0369a1;">
+                Hybrid HMCDS (Markov + AOA)
+              </span>
+            </div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:800; color:#0284c7;">
+              ⏱️ Waktu: <span id="clockValue">0.00s</span>
+            </div>
+          </div>
+
+          <div class="sim-cockpit-grid">
+            <div>
+              <div class="sim-selectors-row">
+                <div class="ctrl-group">
+                  <label>Pilih Algoritma</label>
+                  <select id="simAlgoSelect" onchange="updateHMCDSimulatorUI()">
+                    <option value="hmcds">✨ Hybrid HMCDS (Markov + AOA)</option>
+                    <option value="aoa">⚙️ AOA Saja (Tanpa Markov)</option>
+                    <option value="woa">⚠️ WOA Baseline (Overload)</option>
+                  </select>
+                </div>
+                <div class="ctrl-group">
+                  <label>Dataset NASA iPSC</label>
+                  <select id="simTaskSelect" onchange="updateHMCDSimulatorUI()">
+                    <option value="500">500 Tugas</option>
+                    <option value="1000">1.000 Tugas</option>
+                    <option value="2000">2.000 Tugas</option>
+                  </select>
+                </div>
+              </div>
+              <div class="ctrl-actions">
+                <button class="btn-run" onclick="runHMCDSimulation()">▶ Jalankan Alokasi 3D</button>
+                <button class="btn-reset" onclick="resetHMCDSimulation()">↺ Reset</button>
+              </div>
+            </div>
+
+            <div class="kpi-grid">
+              <div class="kpi-card">
+                <div class="kpi-label">Makespan Selesai</div>
+                <div class="kpi-val" id="simMakespanVal">47.21 s</div>
+                <div class="kpi-sub text-green">-8,29% Lebih Cepat</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Waktu Sched</div>
+                <div class="kpi-val" id="simSchedVal">6.86 s</div>
+                <div class="kpi-sub text-sky">Markov + AOA</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Reduksi Delay</div>
+                <div class="kpi-val" id="simDelayVal">-11,72%</div>
+                <div class="kpi-sub text-green">Real-Time Aman</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Keunggulan PIR</div>
+                <div class="kpi-val" id="simPirVal">+4,66%</div>
+                <div class="kpi-sub text-purple">s.d. +55,86% vs HHO</div>
+              </div>
+            </div>
+
+            <div class="dc-meters-box">
+              <div>
+                <div class="dc-meter-info">
+                  <span><strong>Fog Cluster A</strong> (1.500–2.800 MIPS)</span>
+                  <span id="simFogPct" class="text-sky">68% (Optimal Low-Load)</span>
+                </div>
+                <div class="meter-track"><div class="meter-fill fill-sky" id="simFogBar" style="width:68%;"></div></div>
+              </div>
+              <div>
+                <div class="dc-meter-info">
+                  <span><strong>Fog Cluster B</strong> (100–800 MIPS)</span>
+                  <span id="simEdgePct" class="text-green">65% (Dijaga Markov P_ij)</span>
+                </div>
+                <div class="meter-track"><div class="meter-fill fill-green" id="simEdgeBar" style="width:65%;"></div></div>
+              </div>
+              <div>
+                <div class="dc-meter-info">
+                  <span><strong>Cloud Datacenter</strong> (3.000–5.000 MIPS)</span>
+                  <span id="simCloudPct" class="text-purple">66% (Non-RT Seimbang)</span>
+                </div>
+                <div class="meter-track"><div class="meter-fill fill-purple" id="simCloudBar" style="width:66%;"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sim-status-banner" id="simStatusBanner">
+            <span>✅</span>
+            <span id="simNoteText">
+              <strong>Hasil Analisis:</strong> Markov memprediksi overload lebih awal; AOA memetakan tugas ke VM Low-Load sehingga Makespan &amp; Delay turun drastis.
+            </span>
           </div>
         </div>
 
@@ -402,6 +485,7 @@
   <script src="js/data.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/hmcds-stepper.js"></script>
+  <script src="js/hmcds-stage-3d.js"></script>
   <script src="js/game-engine.js"></script>
   <script src="js/game-ui.js"></script>
 </body>
