@@ -27,9 +27,143 @@
 
   <main class="slides-container">
 
-    <!-- SLIDE 1 -->
+    <!-- SLIDE 1 (BARU): Mengapa Memilih HMCDS (AOA + Markov Chain) Dibandingkan AOA-SSA? -->
     <section class="std-slide active">
-      <span class="slide-tag">SLIDE 1 &bull; IDENTITAS JURNAL &amp; LATAR BELAKANG</span>
+      <span class="slide-tag">SLIDE 1 &bull; BRIEFING ALGORITMA HYBRID &bull; HMCDS VS AOA-SSA</span>
+      <h2 style="font-size:24px; font-weight:800; margin-bottom:6px;">Mengapa Memilih HMCDS (AOA + Markov Chain) Dibandingkan AOA-SSA?</h2>
+      <p style="font-size:13px; color:#334155; margin-bottom:12px; line-height:1.5;">
+        Menjawab tantangan <strong>Dynamic Task Scheduling &amp; Load Balancing</strong> secara proaktif dan ringan pada perangkat <em>Fog–Cloud</em> dibandingkan optimasi penempatan/replikasi file (<em>Data Placement</em>).
+      </p>
+
+      <div class="grid-2" style="margin-bottom:12px;">
+        <div class="card" style="border-top:4px solid #64748b; background:#f8fafc;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:4px;">
+            <strong style="font-size:14px; color:#334155;">📁 AOA-SSA (Pembanding)</strong>
+            <span style="font-size:10.5px; font-weight:800; background:#e2e8f0; color:#475569; padding:2px 8px; border-radius:999px;">Metaheuristic + Metaheuristic + Floyd</span>
+          </div>
+          <ul style="font-size:12.5px; margin-left:16px; line-height:1.55; color:#334155;">
+            <li><strong>Fokus Kasus:</strong> Replikasi Data &amp; Rute Jaringan Geografis (<em>Data Placement</em> — menentukan file populer $PD_i$ yang digandakan antar-DC).</li>
+            <li><strong>Sifat Penanganan Beban:</strong> <em>Reaktif &amp; Struktural</em> (tanpa peramal probabilistik lonjakan CPU VM).</li>
+            <li><strong>Keterbatasan di Node Fog:</strong> Overhead komputasi ganda (AOA + SSA) ditambah matriks jarak terpendek <strong>Floyd ($O(V^3)$)</strong>.</li>
+          </ul>
+        </div>
+
+        <div class="card" style="border-top:4px solid #0284c7; background:#f0f9ff;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:4px;">
+            <strong style="font-size:14px; color:#0369a1;">🚀 HMCDS: AOA + Markov Chain (Pilihan Kita)</strong>
+            <span style="font-size:10.5px; font-weight:800; background:#0284c7; color:#ffffff; padding:2px 8px; border-radius:999px;">Stochastic Forecasting + Metaheuristic</span>
+          </div>
+          <ul style="font-size:12.5px; margin-left:16px; line-height:1.55; color:#0f172a;">
+            <li><strong>Fokus Kasus:</strong> <em>Dynamic Task Scheduling &amp; Load Balancing</em> (penjadwalan ribuan tugas CPU IoT <em>Real-Time</em> &amp; <em>Non-RT</em> ke VM).</li>
+            <li><strong>Alur Kerja Proaktif:</strong> <code>IoT Tasks</code> &rarr; <code>Prediksi Status VM (Markov P_ij)</code> &rarr; <code>Optimasi Mapping (AOA)</code>.</li>
+            <li><strong>Sangat Ringan di Fog:</strong> Sifat <em>Memoryless</em> Markov ($O(1)$) + hasil teruji: <strong>-11,72% Delay</strong>, <strong>-8,29% Makespan</strong>, <strong>+4,66% PIR</strong>.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:12px;">
+        <div class="card" style="border-left:4px solid #059669;">
+          <h4 style="font-size:13px; color:#065f46; margin-bottom:8px;">📊 Grafik Visual &amp; Statistik Perbandingan Kinerja (0–100)</h4>
+          <div style="margin-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; font-size:11.5px; font-weight:700; margin-bottom:2px;">
+              <span>1. Pencegahan Overload VM Dinamis (Proaktif vs Reaktif)</span>
+              <span style="color:#0284c7;">HMCDS 95% vs AOA-SSA 58%</span>
+            </div>
+            <div style="background:#e2e8f0; height:8px; border-radius:999px; overflow:hidden; margin-bottom:3px;"><div style="width:95%; height:100%; background:linear-gradient(90deg,#0284c7,#10b981);"></div></div>
+            <div style="background:#e2e8f0; height:6px; border-radius:999px; overflow:hidden;"><div style="width:58%; height:100%; background:#94a3b8;"></div></div>
+          </div>
+          <div style="margin-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; font-size:11.5px; font-weight:700; margin-bottom:2px;">
+              <span>2. Efisiensi &amp; Ringannya Komputasi di Fog Node (RAM 0,5 GB)</span>
+              <span style="color:#059669;">HMCDS 92% (13,41 dtk) vs 54%</span>
+            </div>
+            <div style="background:#e2e8f0; height:8px; border-radius:999px; overflow:hidden; margin-bottom:3px;"><div style="width:92%; height:100%; background:linear-gradient(90deg,#059669,#34d399);"></div></div>
+            <div style="background:#e2e8f0; height:6px; border-radius:999px; overflow:hidden;"><div style="width:54%; height:100%; background:#94a3b8;"></div></div>
+          </div>
+          <div>
+            <div style="display:flex; justify-content:space-between; font-size:11.5px; font-weight:700; margin-bottom:2px;">
+              <span>3. Kecepatan Respons Tugas IoT Real-Time (Reduksi Delay)</span>
+              <span style="color:#0284c7;">HMCDS 94% (-11,72% Delay) vs 60%</span>
+            </div>
+            <div style="background:#e2e8f0; height:8px; border-radius:999px; overflow:hidden; margin-bottom:3px;"><div style="width:94%; height:100%; background:linear-gradient(90deg,#0284c7,#38bdf8);"></div></div>
+            <div style="background:#e2e8f0; height:6px; border-radius:999px; overflow:hidden;"><div style="width:60%; height:100%; background:#94a3b8;"></div></div>
+          </div>
+        </div>
+
+        <div class="card" style="background:#0f172a; color:#f8fafc; border:1px solid #334155;">
+          <div style="font-size:11.5px; font-weight:800; color:#38bdf8; margin-bottom:6px;">🎛️ SIMULATOR KONDISI SISTEM (KLIK SKENARIO UJI):</div>
+          <div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px;">
+            <button class="stage-mode-btn scen-btn-iot-rt active" onclick="selectHybridScenario('iot-rt')">1. Trafik IoT Real-Time</button>
+            <button class="stage-mode-btn scen-btn-fog-limit" onclick="selectHybridScenario('fog-limit')">2. Fog Kapasitas Terbatas</button>
+            <button class="stage-mode-btn scen-btn-data-rep" onclick="selectHybridScenario('data-rep')">3. Replikasi File Geografis</button>
+          </div>
+          <div style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:8px 10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:4px;">
+              <span class="scen-badge-out" style="font-size:10px; font-weight:800; color:#7dd3fc;">SKENARIO 1 • TRAFIK IOT REAL-TIME TINGGI</span>
+              <span class="scen-winner-out" style="font-size:10.5px; font-weight:800; background:rgba(16,185,129,0.2); color:#34d399; padding:2px 8px; border-radius:999px;">🏆 HMCDS Unggul Mutlak (Skor 95 vs 58)</span>
+            </div>
+            <div style="margin-bottom:5px;">
+              <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:2px;">
+                <span>Skor Kesesuaian <strong>HMCDS (AOA + Markov)</strong></span>
+                <strong class="scen-hmcds-val" style="color:#38bdf8;">95/100</strong>
+              </div>
+              <div style="background:#0f172a; height:7px; border-radius:999px; overflow:hidden;"><div class="scen-hmcds-bar" style="width:95%; height:100%; background:#38bdf8; transition:width 0.35s;"></div></div>
+            </div>
+            <div style="margin-bottom:6px;">
+              <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:2px;">
+                <span>Skor Kesesuaian <strong>AOA-SSA (Data Placement)</strong></span>
+                <strong class="scen-aoassa-val" style="color:#cbd5e1;">58/100</strong>
+              </div>
+              <div style="background:#0f172a; height:7px; border-radius:999px; overflow:hidden;"><div class="scen-aoassa-bar" style="width:58%; height:100%; background:#64748b; transition:width 0.35s;"></div></div>
+            </div>
+            <p class="scen-summary-out" style="font-size:11.5px; color:#e2e8f0; line-height:1.45; margin:0;">
+              Saat ribuan sensor IoT mengirim tugas Real-Time &amp; Non-Real-Time secara bersamaan, HMCDS memisahkan tugas Real-Time ke Fog Layer dan menggunakan Markov Chain untuk meramal VM yang akan penuh sebelum terjadi antrean (Delay turun 11,72%).
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <table class="data-table" style="margin-bottom:10px;">
+        <thead>
+          <tr>
+            <th style="width:22%;">Kondisi / Skenario Sistem</th>
+            <th style="width:41%;">Output HMCDS (AOA + Markov Chain) — Pilihan Utama</th>
+            <th style="width:37%;">Output AOA-SSA — Pembanding</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1. Karakteristik Workload</strong></td>
+            <td class="highlight-hmcds"><strong>Beban Kerja Dinamis &amp; Real-Time IoT:</strong> Memisahkan tugas Real-Time (Fog) vs Non-RT (Cloud) &amp; meramal lonjakan beban CPU VM.</td>
+            <td><strong>Manajemen Penyimpanan (Data Replication):</strong> Menentukan duplikasi file populer &amp; lokasi simpannya di data center.</td>
+          </tr>
+          <tr>
+            <td><strong>2. Pencegahan Server Penuh</strong></td>
+            <td class="highlight-hmcds"><strong>Proaktif &amp; Prediktif:</strong> Matriks transisi Markov ($P_{ij} \ge \text{MAX}$) memigrasikan tugas ke VM <em>Low-Load</em> sebelum macet.</td>
+            <td><strong>Reaktif &amp; Struktural:</strong> Pencarian populasi ganda (AOA+SSA) tanpa prediksi peluang status beban VM di masa depan.</td>
+          </tr>
+          <tr>
+            <td><strong>3. Skalabilitas Tugas Besar</strong></td>
+            <td class="highlight-hmcds"><strong>Cepat &amp; Hemat Energi:</strong> Makespan <strong>-8,29%</strong>, Delay <strong>-11,72%</strong>, dan jadwal 1.000 tugas tuntas dalam <strong>13,41 detik</strong>.</td>
+            <td><strong>Overhead Lebih Kompleks:</strong> Menggabungkan 2 metaheuristik (AOA+SSA) + algoritma <em>shortest path</em> Floyd.</td>
+          </tr>
+          <tr>
+            <td><strong>4. Beban Memori di Fog Node</strong></td>
+            <td class="highlight-hmcds"><strong>Ringan (Lightweight):</strong> Sifat <em>memoryless</em> Markov tidak butuh histori panjang; ideal untuk Fog VM (RAM 0,5 GB).</td>
+            <td><strong>Butuh Topologi Global:</strong> Wajib menyimpan matriks jarak antar-node (Floyd), popularitas file ($PD_i$), &amp; storage region.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="takeaway-box">
+        <div class="takeaway-tag">🎙️ PANDUAN PENJELASAN PRESENTER (SLIDE 1 — MENGAPA HMCDS VS AOA-SSA?)</div>
+        <div class="takeaway-text">"Mengapa kelompok kami memilih <strong>HMCDS (AOA + Markov Chain)</strong> dibandingkan <strong>AOA-SSA</strong>? Ada 3 alasan utama: <strong>(1) Keselarasan Masalah:</strong> Kasus kita adalah penjadwalan tugas CPU dinamis ke VM (<em>Task Scheduling</em>), sedangkan AOA-SSA berfokus pada penggandaan file penyimpanan (<em>Data Placement</em>). <strong>(2) Proaktif vs Reaktif:</strong> HMCDS punya Markov Chain sebagai 'peringatan dini' sebelum VM penuh. <strong>(3) Ringan di Fog:</strong> Memasangkan AOA dengan Markov yang <em>memoryless</em> jauh lebih ringan bagi node Fog dibanding menggabungkan dua metaheuristik berat (AOA + SSA + Floyd)."</div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2 -->
+    <section class="std-slide">
+      <span class="slide-tag">SLIDE 2 &bull; IDENTITAS JURNAL &amp; LATAR BELAKANG</span>
       <h2 style="font-size:24px; font-weight:800; margin-bottom:10px;">Hybrid Markov Chain-Based Dynamic Scheduling (HMCDS)</h2>
       <div class="card" style="border-left:4px solid #0284c7; margin-bottom:12px;">
         <p style="font-size:13px; line-height:1.55;">

@@ -71,7 +71,7 @@
     <!-- Teleport Popover -->
     <div class="teleport-popover" id="teleportPopover">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid var(--cream-border); padding-bottom:6px;">
-        <span style="font-size:12px; font-weight:800; color:var(--teal-700);">📍 TELEPORT &amp; DAFTAR POS (1–7)</span>
+        <span style="font-size:12px; font-weight:800; color:var(--teal-700);">📍 TELEPORT &amp; DAFTAR POS (1–8)</span>
         <button class="btn-hud-secondary" style="padding:2px 7px; font-size:10px;" onclick="toggleTeleportPopover()">✕</button>
       </div>
       <div id="teleportListContainer" style="display:flex; flex-direction:column; gap:5px; max-height:330px; overflow-y:auto;"></div>
@@ -80,7 +80,7 @@
     <!-- Bottom-Left Quest & Skill Hotbar -->
     <div class="hud-quest-card">
       <div class="quest-header-row">
-        <span class="quest-title" id="questProgressTitle">Misi HMCDS &bull; 0/7 Cluster Stabil</span>
+        <span class="quest-title" id="questProgressTitle">Misi HMCDS &bull; 0/8 Awan Pos Putih</span>
         <button class="btn-hud-secondary" style="padding:2px 8px; font-size:10.5px;" onclick="resetPlayerPosition()">↺ Reset</button>
       </div>
       <div class="quest-desc" id="questProgressDesc">
@@ -128,9 +128,164 @@
 
       <div class="window-body" id="slideWindowBody">
 
-        <!-- SLIDE 1: Identitas Jurnal & Latar Belakang -->
+        <!-- SLIDE 1 (POS 1 BARU): Mengapa Memilih HMCDS (AOA + Markov Chain) Dibandingkan AOA-SSA? -->
         <div class="game-slide-pane" id="gameSlide_0">
-          <span class="slide-tag">POS 01 &bull; LAPISAN 1: IOT SENSOR VALLEY &bull; LATAR BELAKANG</span>
+          <span class="slide-tag">POS 01 &bull; BRIEFING ALGORITMA HYBRID &bull; HMCDS VS AOA-SSA</span>
+          <h2 style="font-size:21px; font-weight:800; margin-bottom:4px;">Mengapa Memilih HMCDS (AOA + Markov Chain) Dibandingkan AOA-SSA?</h2>
+          <p style="font-size:12.5px; color:#334155; margin-bottom:10px; line-height:1.5;">
+            Menjawab tantangan <strong>Dynamic Task Scheduling &amp; Load Balancing</strong> secara proaktif dan ringan pada perangkat <em>Fog–Cloud</em> dibandingkan optimasi penempatan/replikasi file (<em>Data Placement</em>).
+          </p>
+
+          <!-- 1. Split Comparison Cards (2 Kolom) -->
+          <div class="grid-2" style="margin-bottom:10px;">
+            <!-- Kartu Kiri: Pembanding AOA-SSA -->
+            <div class="card" style="border-top:4px solid #64748b; background:#f8fafc;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:4px;">
+                <strong style="font-size:13.5px; color:#334155;">📁 AOA-SSA (Pembanding)</strong>
+                <span style="font-size:10px; font-weight:800; background:#e2e8f0; color:#475569; padding:2px 8px; border-radius:999px;">Metaheuristic + Metaheuristic + Floyd</span>
+              </div>
+              <ul style="font-size:11.8px; margin-left:16px; line-height:1.55; color:#334155;">
+                <li><strong>Fokus Kasus:</strong> Replikasi Data &amp; Rute Jaringan Geografis (<em>Data Placement</em> — menentukan file populer $PD_i$ yang digandakan antar-DC).</li>
+                <li><strong>Sifat Penanganan Beban:</strong> <em>Reaktif &amp; Struktural</em> (tanpa mekanisme peramal probabilistik lonjakan CPU VM).</li>
+                <li><strong>Keterbatasan di Node Fog:</strong> Overhead komputasi ganda (2 algoritma populasi AOA + SSA) ditambah matriks jarak terpendek <strong>Floyd ($O(V^3)$)</strong>.</li>
+              </ul>
+            </div>
+
+            <!-- Kartu Kanan: Pilihan Utama HMCDS -->
+            <div class="card" style="border-top:4px solid #0284c7; background:#f0f9ff; box-shadow:0 4px 14px rgba(2,132,199,0.12);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:4px;">
+                <strong style="font-size:13.5px; color:#0369a1;">🚀 HMCDS: AOA + Markov Chain (Pilihan Kita)</strong>
+                <span style="font-size:10px; font-weight:800; background:#0284c7; color:#ffffff; padding:2px 8px; border-radius:999px;">Stochastic Forecasting + Metaheuristic</span>
+              </div>
+              <ul style="font-size:11.8px; margin-left:16px; line-height:1.55; color:#0f172a;">
+                <li><strong>Fokus Kasus:</strong> <em>Dynamic Task Scheduling &amp; Load Balancing</em> (penjadwalan ribuan tugas CPU IoT <em>Real-Time</em> &amp; <em>Non-RT</em> ke VM).</li>
+                <li><strong>Alur Kerja Proaktif:</strong> <code>IoT Tasks</code> &rarr; <code>Prediksi Status VM (Markov P_ij)</code> &rarr; <code>Optimasi Mapping (AOA)</code>.</li>
+                <li><strong>Sangat Ringan di Fog:</strong> Sifat <em>Memoryless</em> Markov ($O(1)$ tanpa histori panjang) + hasil teruji: <strong>-11,72% Delay</strong>, <strong>-8,29% Makespan</strong>, <strong>+4,66% PIR</strong>.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- 2. Visual Data: Grafik Bar Statistik & Interactive Scenario Selector -->
+          <div class="grid-2" style="margin-bottom:10px;">
+            <!-- Grafik Statistik 4 Parameter Kunci -->
+            <div class="card" style="border-left:4px solid #059669;">
+              <h4 style="font-size:12.5px; color:#065f46; margin-bottom:8px;">📊 Grafik Visual &amp; Statistik Perbandingan Kinerja (Skala 0–100)</h4>
+
+              <div style="margin-bottom:7px;">
+                <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; margin-bottom:2px;">
+                  <span>1. Pencegahan Overload VM Dinamis (Proaktif vs Reaktif)</span>
+                  <span style="color:#0284c7;">HMCDS 95% vs AOA-SSA 58%</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:3px;">
+                  <div style="background:#e2e8f0; height:8px; border-radius:999px; overflow:hidden;"><div style="width:95%; height:100%; background:linear-gradient(90deg,#0284c7,#10b981);"></div></div>
+                  <div style="background:#e2e8f0; height:6px; border-radius:999px; overflow:hidden;"><div style="width:58%; height:100%; background:#94a3b8;"></div></div>
+                </div>
+              </div>
+
+              <div style="margin-bottom:7px;">
+                <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; margin-bottom:2px;">
+                  <span>2. Efisiensi &amp; Ringannya Komputasi di Fog Node (RAM 0,5 GB)</span>
+                  <span style="color:#059669;">HMCDS 92% (13,41 dtk) vs 54%</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:3px;">
+                  <div style="background:#e2e8f0; height:8px; border-radius:999px; overflow:hidden;"><div style="width:92%; height:100%; background:linear-gradient(90deg,#059669,#34d399);"></div></div>
+                  <div style="background:#e2e8f0; height:6px; border-radius:999px; overflow:hidden;"><div style="width:54%; height:100%; background:#94a3b8;"></div></div>
+                </div>
+              </div>
+
+              <div style="margin-bottom:7px;">
+                <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; margin-bottom:2px;">
+                  <span>3. Kecepatan Respons Tugas IoT Real-Time (Reduksi Delay)</span>
+                  <span style="color:#0284c7;">HMCDS 94% (-11,72% Delay) vs 60%</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:3px;">
+                  <div style="background:#e2e8f0; height:8px; border-radius:999px; overflow:hidden;"><div style="width:94%; height:100%; background:linear-gradient(90deg,#0284c7,#38bdf8);"></div></div>
+                  <div style="background:#e2e8f0; height:6px; border-radius:999px; overflow:hidden;"><div style="width:60%; height:100%; background:#94a3b8;"></div></div>
+                </div>
+              </div>
+
+              <div style="font-size:10.5px; color:#475569; display:flex; gap:12px; margin-top:4px;">
+                <span>🟦🟩 <strong>Bar Atas:</strong> HMCDS (AOA + Markov)</span>
+                <span>⬜ <strong>Bar Bawah:</strong> AOA-SSA (+ Floyd)</span>
+              </div>
+            </div>
+
+            <!-- Interactive Scenario Selector (3 Tombol Skenario Uji) -->
+            <div class="card" style="background:#0f172a; color:#f8fafc; border:1px solid #334155;">
+              <div style="font-size:11px; font-weight:800; color:#38bdf8; margin-bottom:6px;">🎛️ SIMULATOR KONDISI SISTEM (KLIK SKENARIO UJI):</div>
+              <div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px;">
+                <button class="stage-mode-btn scen-btn-iot-rt active" onclick="selectHybridScenario('iot-rt')">1. Trafik IoT Real-Time</button>
+                <button class="stage-mode-btn scen-btn-fog-limit" onclick="selectHybridScenario('fog-limit')">2. Fog Kapasitas Terbatas</button>
+                <button class="stage-mode-btn scen-btn-data-rep" onclick="selectHybridScenario('data-rep')">3. Replikasi File Geografis</button>
+              </div>
+              <div style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:8px 10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:4px;">
+                  <span class="scen-badge-out" style="font-size:10px; font-weight:800; color:#7dd3fc;">SKENARIO 1 • TRAFIK IOT REAL-TIME TINGGI</span>
+                  <span class="scen-winner-out" style="font-size:10.5px; font-weight:800; background:rgba(16,185,129,0.2); color:#34d399; padding:2px 8px; border-radius:999px;">🏆 HMCDS Unggul Mutlak (Skor 95 vs 58)</span>
+                </div>
+                <div style="margin-bottom:5px;">
+                  <div style="display:flex; justify-content:space-between; font-size:10.5px; margin-bottom:2px;">
+                    <span>Skor Kesesuaian <strong>HMCDS (AOA + Markov)</strong></span>
+                    <strong class="scen-hmcds-val" style="color:#38bdf8;">95/100</strong>
+                  </div>
+                  <div style="background:#0f172a; height:7px; border-radius:999px; overflow:hidden;"><div class="scen-hmcds-bar" style="width:95%; height:100%; background:#38bdf8; transition:width 0.35s;"></div></div>
+                </div>
+                <div style="margin-bottom:6px;">
+                  <div style="display:flex; justify-content:space-between; font-size:10.5px; margin-bottom:2px;">
+                    <span>Skor Kesesuaian <strong>AOA-SSA (Data Placement)</strong></span>
+                    <strong class="scen-aoassa-val" style="color:#cbd5e1;">58/100</strong>
+                  </div>
+                  <div style="background:#0f172a; height:7px; border-radius:999px; overflow:hidden;"><div class="scen-aoassa-bar" style="width:58%; height:100%; background:#64748b; transition:width 0.35s;"></div></div>
+                </div>
+                <p class="scen-summary-out" style="font-size:11px; color:#e2e8f0; line-height:1.45; margin:0;">
+                  Saat ribuan sensor IoT mengirim tugas Real-Time &amp; Non-Real-Time secara bersamaan, HMCDS memisahkan tugas Real-Time ke Fog Layer dan menggunakan Markov Chain untuk meramal VM yang akan penuh sebelum terjadi antrean (Delay turun 11,72%). Sebaliknya, AOA-SSA dirancang untuk replikasi file, sehingga tidak memiliki peramal antrean CPU real-time.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Tabel Ringkas Perbandingan 4 Kondisi Sistem -->
+          <table class="data-table" style="margin-bottom:8px;">
+            <thead>
+              <tr>
+                <th style="width:22%;">Kondisi / Skenario Sistem</th>
+                <th style="width:41%;">Output HMCDS (AOA + Markov Chain) — Pilihan Utama</th>
+                <th style="width:37%;">Output AOA-SSA — Pembanding</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>1. Karakteristik Workload</strong></td>
+                <td class="highlight-hmcds"><strong>Beban Kerja Dinamis &amp; Real-Time IoT:</strong> Memisahkan tugas Real-Time (Fog) vs Non-RT (Cloud) &amp; meramal lonjakan beban CPU VM.</td>
+                <td><strong>Manajemen Penyimpanan (Data Replication):</strong> Menentukan duplikasi file populer &amp; lokasi simpannya di data center.</td>
+              </tr>
+              <tr>
+                <td><strong>2. Pencegahan Server Penuh</strong></td>
+                <td class="highlight-hmcds"><strong>Proaktif &amp; Prediktif:</strong> Matriks transisi Markov ($P_{ij} \ge \text{MAX}$) memigrasikan tugas ke VM <em>Low-Load</em> sebelum macet.</td>
+                <td><strong>Reaktif &amp; Struktural:</strong> Pencarian populasi ganda (AOA+SSA) tanpa prediksi peluang status beban VM di masa depan.</td>
+              </tr>
+              <tr>
+                <td><strong>3. Skalabilitas Tugas Besar</strong></td>
+                <td class="highlight-hmcds"><strong>Cepat &amp; Hemat Energi:</strong> Makespan <strong>-8,29%</strong>, Delay <strong>-11,72%</strong>, dan jadwal 1.000 tugas tuntas dalam <strong>13,41 detik</strong>.</td>
+                <td><strong>Overhead Lebih Kompleks:</strong> Menggabungkan 2 metaheuristik (AOA+SSA) + algoritma <em>shortest path</em> Floyd.</td>
+              </tr>
+              <tr>
+                <td><strong>4. Beban Memori di Fog Node</strong></td>
+                <td class="highlight-hmcds"><strong>Ringan (Lightweight):</strong> Sifat <em>memoryless</em> Markov tidak butuh histori panjang; ideal untuk Fog VM (RAM 0,5 GB).</td>
+                <td><strong>Butuh Topologi Global:</strong> Wajib menyimpan matriks jarak antar-node (Floyd), popularitas file ($PD_i$), &amp; storage region.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="takeaway-box">
+            <div class="takeaway-tag">🎙️ PANDUAN PENJELASAN PRESENTER (SLIDE 1 — MENGAPA HMCDS VS AOA-SSA?)</div>
+            <div class="takeaway-text">"Mengapa kelompok kami memilih <strong>HMCDS (AOA + Markov Chain)</strong> dibandingkan <strong>AOA-SSA</strong>? Ada 3 alasan utama: <strong>(1) Keselarasan Masalah:</strong> Kasus kita adalah penjadwalan tugas CPU dinamis ke VM (<em>Task Scheduling</em>), sedangkan AOA-SSA berfokus pada penggandaan file penyimpanan (<em>Data Placement</em>). <strong>(2) Proaktif vs Reaktif:</strong> HMCDS punya Markov Chain sebagai 'peringatan dini' sebelum VM penuh. <strong>(3) Ringan di Fog:</strong> Memasangkan AOA dengan Markov yang <em>memoryless</em> jauh lebih ringan bagi node Fog dibanding menggabungkan dua metaheuristik berat (AOA + SSA + Floyd)."</div>
+          </div>
+        </div>
+
+        <!-- SLIDE 2: Identitas Jurnal & Latar Belakang -->
+        <div class="game-slide-pane" id="gameSlide_1" style="display:none;">
+          <span class="slide-tag">POS 02 &bull; LAPISAN 1: IOT SENSOR VALLEY &bull; LATAR BELAKANG</span>
           <h2 style="font-size:21px; font-weight:800; margin-bottom:6px;">Hybrid Markov Chain-Based Dynamic Scheduling (HMCDS)</h2>
           <div class="card" style="border-left:4px solid #0284c7; margin-bottom:10px;">
             <p style="font-size:12.5px; line-height:1.55; margin:0;">
@@ -160,14 +315,14 @@
           </div>
 
           <div class="takeaway-box">
-            <div class="takeaway-tag">🎙️ PANDUAN PENJELASAN PRESENTER (SLIDE 1)</div>
+            <div class="takeaway-tag">🎙️ PANDUAN PENJELASAN PRESENTER (SLIDE 2)</div>
             <div class="takeaway-text">"Jurnal ini mengusulkan kerangka kerja <strong>HMCDS</strong> untuk menjawab dilema IoT: Cloud itu besar tapi jauh (latensi tinggi), sedangkan Fog itu dekat tapi kecil (mudah penuh). HMCDS menggabungkan <strong>Markov Chain</strong> untuk meramal VM mana yang akan penuh lebih dulu, dan <strong>AOA</strong> untuk membagi tugas secara optimal agar tidak ada VM yang overload."</div>
           </div>
         </div>
 
-        <!-- SLIDE 2: Arsitektur 3 Lapis & Klasifikasi Tugas -->
-        <div class="game-slide-pane" id="gameSlide_1" style="display:none;">
-          <span class="slide-tag">POS 02 &bull; GERBANG CF_MANAGER &bull; ARSITEKTUR 3 LAPIS</span>
+        <!-- SLIDE 3: Arsitektur 3 Lapis & Klasifikasi Tugas -->
+        <div class="game-slide-pane" id="gameSlide_2" style="display:none;">
+          <span class="slide-tag">POS 03 &bull; GERBANG CF_MANAGER &bull; ARSITEKTUR 3 LAPIS</span>
           <h2 style="font-size:21px; font-weight:800; margin-bottom:8px;">Three-Layer Architecture &amp; Klasifikasi Tugas oleh <code>CF_Manager</code></h2>
 
           <div class="grid-3" style="margin-bottom:10px;">
@@ -213,14 +368,14 @@
           </div>
 
           <div class="takeaway-box">
-            <div class="takeaway-tag">🎙️ PANDUAN PENJELASAN PRESENTER (SLIDE 2)</div>
+            <div class="takeaway-tag">🎙️ PANDUAN PENJELASAN PRESENTER (SLIDE 3)</div>
             <div class="takeaway-text">"Sebelum algoritma optimasi berjalan, semua tugas dari sensor IoT diterima dulu oleh <code>CF_Manager</code> di lapisan Fog. <code>CF_Manager</code> ini ibarat polisi lalu lintas: tugas darurat (<em>Real-Time</em>) dikunci agar hanya diproses di 15 VM Fog yang dekat, sedangkan tugas biasa (<em>Non-Real-Time</em>) boleh dilempar ke 40 VM Cloud yang tenaganya jauh lebih besar."</div>
           </div>
         </div>
 
-        <!-- SLIDE 3: Tahap 1 — Markov Chain -->
-        <div class="game-slide-pane" id="gameSlide_2" style="display:none;">
-          <span class="slide-tag">POS 03 &bull; FOG PLATEAU &bull; TAHAP 1: MARKOV CHAIN</span>
+        <!-- SLIDE 4: Tahap 1 — Markov Chain -->
+        <div class="game-slide-pane" id="gameSlide_3" style="display:none;">
+          <span class="slide-tag">POS 04 &bull; FOG PLATEAU &bull; TAHAP 1: MARKOV CHAIN</span>
           <h2 style="font-size:21px; font-weight:800; margin-bottom:6px;">Tahap 1: Prediksi Beban VM dengan Markov Chain (<em>VM Load Forecasting</em>)</h2>
           <p style="font-size:12.5px; margin-bottom:8px; line-height:1.5;">
             <strong>Mengapa Markov Chain?</strong> Markov Chain adalah model peluang yang bersifat <strong><em>memoryless</em></strong> (prediksi kondisi masa depan $t+1$ hanya butuh kondisi saat ini $t$, tanpa perlu menyimpan sejarah panjang). Hasilnya: prediksi beban VM berjalan <strong>sangat cepat &amp; ringan</strong> dibanding harus melatih <em>Deep Learning</em>.
@@ -258,14 +413,14 @@
           </div>
 
           <div class="takeaway-box">
-            <div class="takeaway-tag">🎙️ PANDUAN PENJELASAN PRESENTER (SLIDE 3 — RUMUS MARKOV)</div>
+            <div class="takeaway-tag">🎙️ PANDUAN PENJELASAN PRESENTER (SLIDE 4 — RUMUS MARKOV)</div>
             <div class="takeaway-text">"Untuk menjelaskan rumus di slide ini cukup 3 poin: <strong>Pertama</strong>, kita ukur dulu beban tiap VM ($\text{LOAD}$) dari waktu proses ($E_i$) ditambah waktu antre ($W_i$). <strong>Kedua</strong>, setiap VM diberi label status: Low-Load (longgar), Normal, atau Overloaded (penuh). <strong>Ketiga</strong>, matriks $P_{ij}$ menghitung peluang apakah VM yang sekarang Normal sebentar lagi akan berubah jadi Overloaded. Kalau peluang $P_{ij}$-nya melewati batas MAX, tugasnya langsung dipindahkan lebih dulu ke VM yang Low-Load."</div>
           </div>
         </div>
 
-        <!-- SLIDE 4: Tahap 2 — AOA -->
-        <div class="game-slide-pane" id="gameSlide_3" style="display:none;">
-          <span class="slide-tag">POS 04 &bull; FOG PLATEAU &bull; TAHAP 2: ARITHMETIC OPTIMIZATION ALGORITHM</span>
+        <!-- SLIDE 5: Tahap 2 — AOA -->
+        <div class="game-slide-pane" id="gameSlide_4" style="display:none;">
+          <span class="slide-tag">POS 05 &bull; FOG PLATEAU &bull; TAHAP 2: ARITHMETIC OPTIMIZATION ALGORITHM</span>
           <h2 style="font-size:21px; font-weight:800; margin-bottom:6px;">Tahap 2: Optimasi Penjadwalan Menggunakan AOA</h2>
           <p style="font-size:12.5px; margin-bottom:8px; line-height:1.5;">
             Setelah Markov Chain menyaring VM mana yang aman (tidak <em>Overloaded</em>), <strong>AOA</strong> bertugas mencari kombinasi pemetaan <strong>Tugas ke-$i$ &rarr; VM ke-$j$</strong> yang menghasilkan waktu selesai paling cepat dan hemat energi menggunakan 4 operasi matematika dasar ($\div, \times, -, +$).
@@ -304,20 +459,20 @@
           </div>
 
           <div class="takeaway-box">
-            <div class="takeaway-tag">🎙️ PANDUAN PENJELASAN PRESENTER (SLIDE 4 — RUMUS AOA)</div>
+            <div class="takeaway-tag">🎙️ PANDUAN PENJELASAN PRESENTER (SLIDE 5 — RUMUS AOA)</div>
             <div class="takeaway-text">"Inti rumus AOA sangat intuitif: kalau sebuah angka kita <strong>kali atau bagi ($\times, \div$)</strong>, nilainya akan meloncat jauh — itulah kenapa dipakai di awal untuk <strong>Eksplorasi</strong> mencari kandidat VM secara luas. Sebaliknya, kalau angka kita <strong>tambah atau kurang ($+, -$)</strong>, nilainya hanya bergeser sedikit — itulah kenapa dipakai di akhir untuk <strong>Eksploitasi</strong> menyempurnakan jadwal terbaik <code>best(x)</code>."</div>
           </div>
         </div>
 
-        <!-- SLIDE 5: Panggung 3D Per-Babak & Alur Kerja Hybrid HMCDS -->
-        <div class="game-slide-pane" id="gameSlide_4" style="display:none;">
-          <span class="slide-tag">POS 05 &bull; JEMBATAN FOG–CLOUD &bull; VISUALISASI 3D PER-BABAK</span>
+        <!-- SLIDE 6: Panggung 3D Per-Babak & Alur Kerja Hybrid HMCDS -->
+        <div class="game-slide-pane" id="gameSlide_5" style="display:none;">
+          <span class="slide-tag">POS 06 &bull; JEMBATAN FOG–CLOUD &bull; VISUALISASI 3D PER-BABAK</span>
           <h2 style="font-size:20px; font-weight:800; margin-bottom:4px;">Simulasi 3D Per-Babak: Cara Kerja Markov Chain + AOA</h2>
           <p style="font-size:12px; color:#475569; margin-bottom:6px;">
             Klik salah satu tab babak di pojok kanan atas panggung 3D (<strong>1. CF_Manager</strong>, <strong>2. Markov Chain</strong>, <strong>3. AOA Eksplorasi</strong>, <strong>4. AOA Eksploitasi</strong>). Setiap tab akan menjalankan animasi 3D tahapan kerjanya secara otomatis:
           </p>
 
-          <!-- PANGGUNG 3D TOPOLOGI FOG-CLOUD PER-BABAK (KHUSUS DI SLIDE 5) -->
+          <!-- PANGGUNG 3D TOPOLOGI FOG-CLOUD PER-BABAK (KHUSUS DI SLIDE 6) -->
           <div class="embedded-dc-stage" style="height: 360px;">
             <div style="position:absolute; top:8px; left:12px; right:12px; display:flex; justify-content:space-between; align-items:center; z-index:10; pointer-events:none; flex-wrap:wrap; gap:6px;">
               <div style="background:rgba(15,23,42,0.92); backdrop-filter:blur(6px); padding:5px 12px; border-radius:999px; font-size:11px; font-weight:800; color:#38bdf8; border:1px solid rgba(56,189,248,0.4); display:flex; align-items:center; gap:8px;">
@@ -357,14 +512,14 @@
           <div id="hmcdsStepperMount"></div>
 
           <div class="takeaway-box">
-            <div class="takeaway-tag">🎙️ PANDUAN PENJELASAN PRESENTER (SLIDE 5)</div>
+            <div class="takeaway-tag">🎙️ PANDUAN PENJELASAN PRESENTER (SLIDE 6)</div>
             <div class="takeaway-text">"Di panggung 3D ini kita bisa melihat langsung kerja sama kedua algoritma per babak: <strong>Tab 1</strong> menunjukkan <code>CF_Manager</code> membagi tugas Real-Time ke Fog dan Non-RT ke Cloud. <strong>Tab 2</strong> menunjukkan perisai <strong>Markov Chain</strong> yang mendeteksi Fog B hampir penuh lalu memigrasikan tugasnya ke Fog A. <strong>Tab 3 &amp; 4</strong> menunjukkan drone <strong>AOA</strong> ($\div, \times$ lalu $-, +$) yang mengunci jadwal optimal <code>best(x)</code>."</div>
           </div>
         </div>
 
-        <!-- SLIDE 6: Eksperimen & Benchmark NASA iPSC/860 -->
-        <div class="game-slide-pane" id="gameSlide_5" style="display:none;">
-          <span class="slide-tag">POS 06 &bull; CLOUD CITADEL &bull; VALIDASI EMPIRIS NASA iPSC/860</span>
+        <!-- SLIDE 7: Eksperimen & Benchmark NASA iPSC/860 -->
+        <div class="game-slide-pane" id="gameSlide_6" style="display:none;">
+          <span class="slide-tag">POS 07 &bull; CLOUD CITADEL &bull; VALIDASI EMPIRIS NASA iPSC/860</span>
           <h2 style="font-size:21px; font-weight:800; margin-bottom:6px;">Konfigurasi Simulasi &amp; Perbandingan Hasil Eksperimen</h2>
           <div class="card" style="margin-bottom:8px; border-left:4px solid #0284c7;">
             <p style="font-size:12px; margin:0; line-height:1.5;">
@@ -407,14 +562,14 @@
           </div>
 
           <div class="takeaway-box">
-            <div class="takeaway-tag">🎙️ PANDUAN PENJELASAN PRESENTER (SLIDE 6)</div>
+            <div class="takeaway-tag">🎙️ PANDUAN PENJELASAN PRESENTER (SLIDE 7)</div>
             <div class="takeaway-text">"Tabel kiri membuktikan waktu pencarian jadwal HMCDS paling singkat dibanding FA, PSO, WOA, JSO, dan HHO. Tabel kanan membuktikan Makespan penyelesaian tugas NASA iPSC juga paling cepat di semua skala (500 s.d. 2.000 tugas). Jika ditanya soal trade-off: benar bahwa menggabungkan Markov + AOA butuh waktu penjadwalan 6,86 detik, namun pengorbanan 2 detik di awal itu menghemat puluhan detik waktu eksekusi server dan menghemat energi."</div>
           </div>
         </div>
 
-        <!-- SLIDE 7: Kesimpulan & Glosarium Q&A -->
-        <div class="game-slide-pane" id="gameSlide_6" style="display:none;">
-          <span class="slide-tag">POS 07 &bull; PUNCAK CLOUD CITADEL &bull; KESIMPULAN &amp; TANYA JAWAB</span>
+        <!-- SLIDE 8: Kesimpulan & Glosarium Q&A -->
+        <div class="game-slide-pane" id="gameSlide_7" style="display:none;">
+          <span class="slide-tag">POS 08 &bull; PUNCAK CLOUD CITADEL &bull; KESIMPULAN &amp; TANYA JAWAB</span>
           <h2 style="font-size:21px; font-weight:800; margin-bottom:6px;">Kesimpulan Akhir &amp; Panduan Tanya Jawab (Q&amp;A Dosen)</h2>
 
           <div class="grid-3" style="margin-bottom:10px;">
@@ -450,7 +605,7 @@
           </div>
 
           <div class="takeaway-box">
-            <div class="takeaway-tag">🎙️ KALIMAT PENUTUP PRESENTASI (SLIDE 7)</div>
+            <div class="takeaway-tag">🎙️ KALIMAT PENUTUP PRESENTASI (SLIDE 8)</div>
             <div class="takeaway-text">"Sebagai penutup, sinergi proaktif dari Markov Chain dan optimasi global dari AOA pada HMCDS terbukti berhasil memangkas Makespan sebesar 8,29%, menurunkan Delay 11,72%, serta meningkatkan PIR rata-rata 4,66% pada dataset riil NASA iPSC/860. Terima kasih, kami siap menerima pertanyaan."</div>
           </div>
         </div>

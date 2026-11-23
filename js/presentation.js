@@ -21,7 +21,8 @@ function updateStdSlide() {
 
   if (typeof HMCDSStage3D !== 'undefined') {
     const stageCanvas = document.getElementById('embeddedThreeCanvas');
-    if (stdSlideIdx === 4 && stageCanvas) {
+    const activeSlide = slides[stdSlideIdx];
+    if (activeSlide && activeSlide.contains(stageCanvas)) {
       HMCDSStage3D.init(stageCanvas);
       HMCDSStage3D.start();
       setTimeout(() => HMCDSStage3D.resize(), 60);

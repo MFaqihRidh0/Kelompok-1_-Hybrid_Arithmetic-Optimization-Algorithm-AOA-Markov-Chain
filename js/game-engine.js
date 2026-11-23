@@ -5,7 +5,7 @@
 let scene, camera, renderer, clock;
 let isIntroMode = true;
 let playerGroup, playerParts = {};
-let playerPos = new THREE.Vector3(0, 0, 14);
+let playerPos = new THREE.Vector3(0, 0, 15);
 let playerRotY = Math.PI;
 let hoverTime = 0;
 
